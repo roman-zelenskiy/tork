@@ -1,11 +1,14 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { TitleStrategy, provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
+import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 import { routes } from './app.routes';
-import { provideClientHydration } from '@angular/platform-browser';
+import { TorkTitleStrategy } from './core/ui/title.strategy';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes), provideClientHydration()
-  ]
+    provideRouter(routes, withComponentInputBinding(), withInMemoryScrolling({ scrollPositionRestoration: 'enabled' })),
+    provideClientHydration(withEventReplay()),
+    { provide: TitleStrategy, useClass: TorkTitleStrategy },
+  ],
 };

@@ -1,0 +1,63 @@
+# Деплой «Торка» на GitHub Pages: статична збірка Angular (пререндер оболонки, дані — у localStorage браузера).
+# Один раз: Settings → Pages → Source: «GitHub Actions».
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # base href = шлях репозиторію (/tork/); сторінки з параметрами рендеряться в браузері
+      - name: Build static site
+        run: npx ng build --configuration pages --base-href "${{ steps.pages.outputs.base_path }}/"
+
+      # глибокі посилання (/tork/naryady/…) відкриває SPA-оболонка; Jekyll не потрібен
+      - name: SPA fallback
+        run: |
+          cp dist/tork/browser/index.csr.html dist/tork/browser/404.html
+          touch dist/tork/browser/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/tork/browser
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

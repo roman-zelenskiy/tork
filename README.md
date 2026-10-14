@@ -1,59 +1,103 @@
-# Tork
+# Торк — CRM для мережі СТО
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.2.
+Демо-проєкт для портфоліо: робоча CRM для мережі автосервісів з двох філій. Бекенду немає — усі дані живуть у `localStorage` браузера, тож застосунок працює з першого відкриття: демо-дані генеруються відносно сьогоднішньої дати.
 
-## Development server
+## Що всередині
 
-To start a local development server, run:
+- **Огляд** (стартова сторінка): виручка, середній чек, обслуговані авто, конверсія погоджень, теплова карта завантаження постів, топи робіт і запчастин, порівняння філій. Усе рахується з даних `localStorage` за обраний період.
+- **Табло постів**: день із кроком 15 хв і тиждень із завантаженням. Записи можна перетягувати між постами й у часі та розтягувати за край. Конфлікти (пост зайнятий, механік на іншому пості, неробочий час) перевіряються наживо. Є скасування (`Ctrl/⌘+Z`), лінія поточного часу й запис кліком по вільному місцю. Без миші: стрілки, `Shift`+стрілки, `Enter`.
+- **Наряди**: таблиця, канбан (перетягування з перевіркою переходів або `Alt`+→) і сторінка наряду. На сторінці наряду:
+  - роботи з довідника нормо-годин (години × ставка поста чи категорії);
+  - запчастини з резервом і списанням;
+  - знижка, оплати (готівка, картка, безготівка) і борг;
+  - історія змін.
+- **Друк A4**: замовлення-наряд, акт прийому зі схемою кузова, акт виконаних робіт.
+- **Акт прийому**: SVG-схема кузова з 25 зонами. Пошкодження позначаються видом (подряпина, вм’ятина, скол, тріщина) з коментарем і стисненим фото. Також пробіг, слайдер пального, комплектність, скарги й підпис клієнта на canvas.
+- **Погодження**: рекомендації з пріоритетом, поясненням і фото. Клієнт отримує посилання `/pogodzhennia/:token` (окремий клієнтський стиль) і погоджує позиції. Відповідь з’являється у вкладці CRM миттєво: тост, сповіщення, підсвітка. Відмови стають відкладеними роботами.
+- **Клієнти й авто**: VIN-декодер (мок за WMI/VDS/роком) і валідація VIN та українських номерів. Картка авто містить:
+  - історію власників;
+  - таймлайн візитів;
+  - графік пробігу;
+  - виконані й відкладені роботи;
+  - фото пошкоджень.
+- **Нагадування**: правила ТО за пробігом, часом або сезоном з прогнозом пробігу. Відкладені роботи, масова розсилка за шаблонами зі змінними (SMS/Viber імітуються) та історія розсилок.
+- **Склад**: артикули, кроси, застосовність, залишки й резерви по філіях, мінімальні залишки. Низький залишок дає сповіщення й автоматичну чернетку замовлення постачальнику. Надходження, списання, переміщення і журнал рухів.
+- **Механіки**: «Мій день механіка» для телефона (старт / пауза / готово, таймер, факт проти норми, фото), ефективність, зарплата (відсоток від закритих нормо-годин + оклад).
+- **Довідники й налаштування**: філії, пости, співробітники, нормо-години й ставки, постачальники, шаблони, правила ТО. Розділ **«Дані»**:
+  - обсяг сховища по сутностях;
+  - експорт і імпорт JSON;
+  - «Скинути до демо-даних» і «Почати з чистої бази»;
+  - журнал дій.
+- **Спільне**:
+  - командна палітра `Ctrl/⌘+K`;
+  - центр сповіщень;
+  - таблиці з сортуванням, фільтрами, збереженими виглядами, вибором колонок, масовими діями й CSV;
+  - світла й темна тема;
+  - синхронізація вкладок (BroadcastChannel + подія `storage`).
 
-```bash
-ng serve
-```
+## Стек
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Angular 22 (standalone, signals, OnPush, новий control flow, strict) з `@angular/ssr` і гідратацією. Сервер рендерить оболонку й скелетони, дані читаються в браузері після гідратації. Також:
 
-## Code scaffolding
+- Angular CDK: overlay, dialog, menu, drag-drop, virtual scroll, a11y;
+- Tailwind CSS 4;
+- ECharts через ngx-echarts (лінива модульна збірка);
+- іконки Lucide.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+## Запуск
 
 ```bash
-ng e2e
+npm install
+npm start                 # dev-сервер: http://localhost:4200
+npm run build             # production-збірка з SSR і пререндером
+npm run serve:ssr:tork    # SSR-сервер (Express + стиснення): http://localhost:4000
+npm run lint
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+## Дані в localStorage
 
-## Additional Resources
+Кожна сутність — окремий ключ із читабельним JSON-масивом. У кожного запису є `id`, `createdAt`, `updatedAt`.
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+| Ключ | Вміст |
+|---|---|
+| `tork:branches`, `tork:posts`, `tork:employees` | Філії, пости, співробітники |
+| `tork:clients`, `tork:cars` | Клієнти, авто (з історією власників) |
+| `tork:orders` | Наряди: статус та історія, роботи, запчастини, оплати, акт прийому |
+| `tork:works` | Довідник нормо-годин |
+| `tork:parts`, `tork:stock-movements` | Запчастини із залишками й резервами по філіях; журнал рухів |
+| `tork:suppliers`, `tork:purchase-orders` | Постачальники, замовлення |
+| `tork:approvals` | Погодження (токен посилання, позиції, рішення клієнта) |
+| `tork:reminders`, `tork:reminder-rules` | Нагадування, правила ТО |
+| `tork:message-templates`, `tork:mailings` | Шаблони повідомлень, історія розсилок |
+| `tork:activity-log`, `tork:notifications`, `tork:saved-views` | Журнал дій (останні 800), сповіщення, збережені вигляди таблиць |
+| `tork:settings`, `tork:meta` | Налаштування (ставки категорій, тема), версія схеми |
+
+Доступ до даних іде через репозиторії з асинхронним API й затримкою 100–300 мс, як у справжнього бекенда (`src/app/core/data`). Обробка помилок сховища:
+
+- **Переповнення**: зрозуміле повідомлення, форма лишається відкритою.
+- **Сховище недоступне**: робота в пам’яті вкладки з банером.
+
+## Структура
+
+```
+src/app/
+  core/data       сховище, репозиторії, моделі, демо-дані, VIN і номери
+  core/domain     наряди, склад, розклад, погодження, механіки, нагадування, аналітика
+  core/ui         тема, діалоги, тости, гарячі клавіші, заголовки
+  shared/ui       UI-кіт: select, combobox, date/time, slider, stepper, маски, таблиця, …
+  layout          оболонка, сайдбар, топбар, палітра, сповіщення
+  features/*      розділи (lazy routes)
+scripts/gen-icons.mjs   генерує дані потрібних іконок Lucide (див. AUDIT.md)
+```
+
+## Деплой
+
+GitHub Pages: https://roman-zelenskiy.github.io/tork/
+
+Workflow `.github/workflows/deploy-pages.yml` збирає статичну версію (`npm run build:pages`, base href `/tork/`) після кожного пушу в `main`. Що відрізняється від SSR-збірки:
+
+- оболонки розділів пререндеряться;
+- сторінки з параметрами (наряд, клієнт, авто, погодження) рендеряться в браузері;
+- глибокі посилання відкриває `404.html`.
+
+Один раз у налаштуваннях репозиторію: Settings → Pages → Source: «GitHub Actions».

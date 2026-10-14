@@ -1,1 +1,1039 @@
-/* You can add global styles to this file, and also import other style files */
+@import 'tailwindcss';
+@import '@angular/cdk/overlay-prebuilt.css';
+
+/* Темна тема вмикається атрибутом на <html> (див. ThemeService і скрипт в index.html) */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/*
+ * «Торк»: теплий папір замість білого, теплий графіт замість чорного,
+ * приглушений сигнальний бурштин — єдиний акцент. Статуси — пастельний фон + насичений текст.
+ */
+:root {
+  color-scheme: light;
+  --bg: #f6f4f0;
+  --surface: #fdfcfa;
+  --subtle: #efece6;
+  --muted: #e7e3dc;
+  --border: rgb(70 56 30 / 0.11);
+  --border-strong: rgb(70 56 30 / 0.2);
+  --text: #23201b;
+  --text-2: #5c574e;
+  --text-3: #6f695e;
+  --accent: #e8a93a;
+  --accent-hover: #df9f2d;
+  --accent-ink: #8a5807;
+  --accent-soft: #fbefd6;
+  --on-accent: #2a1d05;
+  --focus: #c98a1c;
+  --danger: #b4392b;
+  --danger-soft: #f8e6e3;
+  --success: #2c6e3f;
+  --success-soft: #e5f3e8;
+  --info: #34558f;
+  --info-soft: #e9eef7;
+  --overlay: rgb(35 28 18 / 0.32);
+  --shadow-sm: 0 1px 2px rgb(60 45 20 / 0.06);
+  --shadow: 0 1px 2px rgb(60 45 20 / 0.06), 0 4px 12px -2px rgb(60 45 20 / 0.08);
+  --shadow-pop: 0 2px 4px rgb(60 45 20 / 0.06), 0 16px 40px -8px rgb(60 45 20 / 0.2);
+  --scrollbar: rgb(70 56 30 / 0.22);
+  --scrollbar-hover: rgb(70 56 30 / 0.38);
+
+  --s-zapys-bg: #e9eef7;
+  --s-zapys: #34558f;
+  --s-pryiom-bg: #efeaf8;
+  --s-pryiom: #6046a3;
+  --s-diag-bg: #e2f2f1;
+  --s-diag: #1d6d6a;
+  --s-pog-bg: #fbeed6;
+  --s-pog: #8a5807;
+  --s-work-bg: #e7ecfd;
+  --s-work: #3346b0;
+  --s-qc-bg: #f8e8ef;
+  --s-qc: #9b3866;
+  --s-ready-bg: #e5f3e8;
+  --s-ready: #2c6e3f;
+  --s-done-bg: #eceae5;
+  --s-done: #57524a;
+  --s-cancel-bg: #f8e6e3;
+  --s-cancel: #a3392b;
+
+  /* графіки: перевірено валідатором (CVD ΔE ≥ 8, normal ≥ 15) */
+  --viz-1: #c47a0a;
+  --viz-2: #2a78d6;
+  --viz-3: #1baf7a;
+  --viz-seq-0: #f6efe2;
+  --viz-seq-1: #8a5807;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #1b1a17;
+  --surface: #23221e;
+  --subtle: #2b2925;
+  --muted: #34322d;
+  --border: rgb(255 238 205 / 0.09);
+  --border-strong: rgb(255 238 205 / 0.17);
+  --text: #ece8e0;
+  --text-2: #b6b0a5;
+  --text-3: #a29b8f;
+  --accent: #e7ad4a;
+  --accent-hover: #f0b95a;
+  --accent-ink: #f0c47a;
+  --accent-soft: rgb(231 173 74 / 0.14);
+  --on-accent: #2a1d05;
+  --focus: #f0c47a;
+  --danger: #f0a99e;
+  --danger-soft: rgb(230 110 95 / 0.15);
+  --success: #9bd8ab;
+  --success-soft: rgb(100 190 125 / 0.15);
+  --info: #a9c1ec;
+  --info-soft: rgb(120 155 220 / 0.16);
+  --overlay: rgb(8 7 5 / 0.55);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px -2px rgb(0 0 0 / 0.35);
+  --shadow-pop: 0 2px 4px rgb(0 0 0 / 0.3), 0 18px 44px -10px rgb(0 0 0 / 0.6);
+  --scrollbar: rgb(255 238 205 / 0.16);
+  --scrollbar-hover: rgb(255 238 205 / 0.3);
+
+  --s-zapys-bg: rgb(120 155 220 / 0.16);
+  --s-zapys: #a9c1ec;
+  --s-pryiom-bg: rgb(160 135 225 / 0.16);
+  --s-pryiom: #c7b6f0;
+  --s-diag-bg: rgb(80 180 175 / 0.15);
+  --s-diag: #8fd4cf;
+  --s-pog-bg: rgb(231 173 74 / 0.16);
+  --s-pog: #f0c47a;
+  --s-work-bg: rgb(120 140 245 / 0.17);
+  --s-work: #b1bdf7;
+  --s-qc-bg: rgb(220 120 165 / 0.16);
+  --s-qc: #eeb0cc;
+  --s-ready-bg: rgb(100 190 125 / 0.15);
+  --s-ready: #9bd8ab;
+  --s-done-bg: rgb(255 240 210 / 0.08);
+  --s-done: #c4bdb1;
+  --s-cancel-bg: rgb(230 110 95 / 0.15);
+  --s-cancel: #f0a99e;
+
+  --viz-1: #c98500;
+  --viz-2: #3987e5;
+  --viz-3: #199e70;
+  --viz-seq-0: #2e2b25;
+  --viz-seq-1: #f0c47a;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-subtle: var(--subtle);
+  --color-muted: var(--muted);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-ink: var(--text);
+  --color-ink-2: var(--text-2);
+  --color-ink-3: var(--text-3);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-focus: var(--focus);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --font-sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-pop: var(--shadow-pop);
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  /* місце під скролбар зарезервоване: модалки не зсувають верстку */
+  scrollbar-gutter: stable;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  font: 14px/1.5 var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv01', 'ss02';
+}
+/* зміна теми без анімації кольорів по всій сторінці */
+html.theme-switching * {
+  transition: none !important;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+/* ——— скролбари: тонкі, в кольорах теми, з hover — глобально і в будь-якій прокручуваній області ——— */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar);
+  border-radius: 99px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-hover);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ——— курсори ——— */
+a[href],
+button,
+[role='button'],
+[role='tab'],
+[role='option'],
+[role='menuitem'],
+[role='menuitemradio'],
+[role='menuitemcheckbox'],
+[role='switch'],
+[role='checkbox'],
+[role='radio'],
+[role='link'],
+label,
+summary,
+.clickable {
+  cursor: pointer;
+}
+[cdkDrag],
+.cdk-drag,
+.draggable {
+  cursor: grab;
+}
+.cdk-drag-preview,
+.cdk-drag-dragging,
+body.is-dragging,
+body.is-dragging * {
+  cursor: grabbing !important;
+}
+button:disabled,
+[aria-disabled='true'],
+input:disabled,
+.disabled {
+  cursor: not-allowed !important;
+}
+
+/* ——— фокус завжди видимий ——— */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
+/* ——— автозаповнення без системного жовтого ——— */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset;
+  caret-color: var(--text);
+  transition: background-color 9999s;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+.num,
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ——— CDK overlay: модалки, drawer, меню ——— */
+.cdk-overlay-backdrop.tork-backdrop {
+  background: var(--overlay);
+}
+.cdk-overlay-backdrop.cdk-overlay-backdrop-showing.tork-backdrop {
+  opacity: 1;
+}
+.cdk-overlay-backdrop.tork-backdrop-clear {
+  background: transparent;
+}
+/* поява оверлеїв — коротко й лише прозорість/зсув */
+@keyframes tork-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+@keyframes tork-drawer {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+}
+@keyframes tork-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes tork-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+/* коротка підсвітка зміненого рядка/картки (після відповіді клієнта тощо) */
+@keyframes tork-flash {
+  0%,
+  35% {
+    background-color: var(--accent-soft);
+  }
+}
+.flash {
+  animation: tork-flash 2.4s ease-out;
+}
+.animate-pop {
+  animation: tork-pop 160ms var(--ease-out);
+}
+.animate-drawer {
+  animation: tork-drawer 180ms var(--ease-out);
+}
+.animate-fade {
+  animation: tork-fade 140ms ease-out;
+}
+.row-in {
+  animation: tork-row-in 160ms var(--ease-out);
+}
+
+/* скелетон */
+.skeleton {
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--subtle) 0%, var(--muted) 50%, var(--subtle) 100%);
+  background-size: 200% 100%;
+  animation: skeleton 1.4s ease-in-out infinite;
+}
+@keyframes skeleton {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* ——— друк: лише вміст .print-area, A4 ——— */
+@page {
+  size: A4;
+  margin: 14mm;
+}
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .no-print,
+  .cdk-overlay-container {
+    display: none !important;
+  }
+  .print-area {
+    display: block !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    padding: 0 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ═══════════════ UI-кіт: базові класи (компоненти Angular використовують їх же) ═══════════════ */
+@layer components {
+  /* ——— кнопки ——— */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    font: 500 13px/1 var(--font-sans);
+    white-space: nowrap;
+    user-select: none;
+    box-shadow: var(--shadow-sm);
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease,
+      color 120ms ease,
+      transform 120ms ease;
+  }
+  .btn:hover {
+    background: var(--subtle);
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    box-shadow: none;
+  }
+  .btn > svg {
+    flex: none;
+  }
+  .btn-primary {
+    background: var(--accent);
+    border-color: transparent;
+    color: var(--on-accent);
+    font-weight: 600;
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+  }
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    color: var(--text-2);
+  }
+  .btn-ghost:hover {
+    background: var(--subtle);
+    color: var(--text);
+  }
+  .btn-danger {
+    color: var(--danger);
+  }
+  .btn-danger:hover {
+    background: var(--danger-soft);
+    border-color: transparent;
+  }
+  .btn-danger-solid {
+    background: var(--danger);
+    border-color: transparent;
+    color: var(--surface);
+  }
+  .btn-danger-solid:hover {
+    filter: brightness(1.06);
+    background: var(--danger);
+  }
+  .btn-sm {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12.5px;
+  }
+  .btn-lg {
+    height: 40px;
+    padding: 0 16px;
+    font-size: 14px;
+  }
+  .btn-icon {
+    width: 32px;
+    padding: 0;
+  }
+  .btn-icon.btn-sm {
+    width: 28px;
+  }
+  .btn[aria-busy='true'] {
+    pointer-events: none;
+  }
+
+  /* ——— поля ——— */
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .label {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-2);
+  }
+  .hint {
+    font-size: 12px;
+    color: var(--text-3);
+  }
+  .error-text {
+    font-size: 12px;
+    color: var(--danger);
+    display: flex;
+    gap: 4px;
+    align-items: flex-start;
+  }
+  .control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    width: 100%;
+    padding: 0 10px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    text-align: left;
+    transition:
+      border-color 120ms ease,
+      box-shadow 120ms ease;
+  }
+  .control:hover {
+    border-color: color-mix(in srgb, var(--text) 30%, transparent);
+  }
+  .control:focus-within,
+  .control[aria-expanded='true'] {
+    border-color: var(--focus);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 22%, transparent);
+    outline: none;
+  }
+  .control.invalid {
+    border-color: var(--danger);
+  }
+  .control.invalid:focus-within {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 20%, transparent);
+  }
+  .control.is-disabled {
+    background: var(--subtle);
+    color: var(--text-3);
+    cursor: not-allowed;
+  }
+  .control > input,
+  .control > textarea {
+    flex: 1;
+    min-width: 0;
+    height: 34px;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    outline: none;
+  }
+  .control > textarea {
+    height: auto;
+    padding: 8px 0;
+    resize: vertical;
+    min-height: 72px;
+    line-height: 1.5;
+  }
+  .control > svg {
+    flex: none;
+    color: var(--text-3);
+  }
+  .control-sm {
+    min-height: 30px;
+  }
+  .control-sm > input {
+    height: 28px;
+  }
+  input::placeholder,
+  textarea::placeholder,
+  .placeholder {
+    color: var(--text-3);
+    opacity: 1;
+  }
+
+  /* ——— поверхні ——— */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+  .popover {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-pop);
+    animation: tork-pop 140ms var(--ease-out);
+  }
+
+  /* ——— бейджі, чипи, клавіші ——— */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    background: var(--subtle);
+    color: var(--text-2);
+  }
+  .badge-accent {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+  }
+  .badge-danger {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+  .badge-success {
+    background: var(--success-soft);
+    color: var(--success);
+  }
+  .badge-info {
+    background: var(--info-soft);
+    color: var(--info);
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--subtle);
+    font-size: 12px;
+    color: var(--text-2);
+    white-space: nowrap;
+  }
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 5px;
+    border: 1px solid var(--border-strong);
+    border-bottom-width: 2px;
+    background: var(--surface);
+    font: 500 11px/1 var(--font-mono);
+    color: var(--text-2);
+  }
+
+  /* ——— меню/списки опцій ——— */
+  .menu {
+    min-width: 180px;
+    padding: 4px;
+    max-height: min(360px, 60vh);
+    overflow: auto;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-pop);
+    animation: tork-pop 140ms var(--ease-out);
+  }
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 32px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+  }
+  .menu-item > svg {
+    flex: none;
+    color: var(--text-3);
+  }
+  .menu-item:hover,
+  .menu-item.active,
+  .menu-item:focus-visible,
+  .menu-item.cdk-option-active {
+    background: var(--subtle);
+    outline: none;
+  }
+  .menu-item[aria-selected='true'] {
+    color: var(--accent-ink);
+    font-weight: 500;
+  }
+  .menu-item.danger {
+    color: var(--danger);
+  }
+  .menu-item.danger > svg {
+    color: currentColor;
+  }
+  .menu-item:disabled,
+  .menu-item[aria-disabled='true'] {
+    opacity: 0.5;
+  }
+  .menu-sep {
+    height: 1px;
+    margin: 4px -4px;
+    background: var(--border);
+  }
+  .menu-label {
+    padding: 6px 8px 4px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-3);
+  }
+
+  /* ——— таблиці ——— */
+  .tbl {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+  }
+  .tbl th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    height: 36px;
+    padding: 0 12px;
+    background: var(--subtle);
+    border-bottom: 1px solid var(--border);
+    color: var(--text-2);
+    font-size: 12px;
+    font-weight: 500;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .tbl td {
+    height: 44px;
+    white-space: nowrap;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .tbl tbody tr {
+    transition: background-color 120ms ease;
+  }
+  .tbl tbody tr:hover {
+    background: color-mix(in srgb, var(--subtle) 60%, transparent);
+  }
+  .tbl tbody tr.selected {
+    background: var(--accent-soft);
+  }
+
+  /* ——— посилання в тексті ——— */
+  .link {
+    color: var(--accent-ink);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--accent-ink) 35%, transparent);
+    text-underline-offset: 3px;
+  }
+  .link:hover {
+    text-decoration-color: currentColor;
+  }
+  .row-link {
+    color: inherit;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .row-link:hover {
+    color: var(--accent-ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .truncate-1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  /* ——— табличка номерного знака ——— */
+  .plate {
+    display: inline-flex;
+    align-items: stretch;
+    height: 22px;
+    border: 1.5px solid color-mix(in srgb, var(--text) 70%, transparent);
+    border-radius: 4px;
+    overflow: hidden;
+    background: #fff;
+    color: #111;
+    font: 600 12px/1 var(--font-mono);
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+  .plate::before {
+    content: 'UA';
+    display: flex;
+    align-items: flex-end;
+    padding: 0 3px 3px;
+    background: linear-gradient(#2f5fbf 0 50%, #f2c330 50% 100%);
+    background-size: 100% 9px;
+    background-repeat: no-repeat;
+    background-position: 0 2px;
+    background-color: #2449a0;
+    color: #fff;
+    font-size: 7px;
+    font-weight: 600;
+  }
+  .plate > span {
+    display: flex;
+    align-items: center;
+    padding: 0 5px;
+  }
+  [data-theme='dark'] .plate {
+    border-color: #d8d2c6;
+  }
+}
+
+/* ——— модалки (CDK Dialog) ——— */
+.cdk-overlay-pane.tk-dialog {
+  max-height: calc(100dvh - 32px);
+}
+.tk-dialog .cdk-dialog-container,
+.tk-drawer .cdk-dialog-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: inherit;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  outline: none;
+  overflow: hidden;
+  animation: tork-pop 160ms var(--ease-out);
+}
+.cdk-overlay-pane.tk-drawer {
+  position: fixed !important;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(520px, 100vw);
+  height: 100dvh;
+}
+.tk-drawer .cdk-dialog-container {
+  height: 100%;
+  max-height: 100%;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  border-width: 0 0 0 1px;
+  animation: tork-drawer 180ms var(--ease-out);
+}
+@media (max-width: 640px) {
+  .tk-drawer .cdk-dialog-container {
+    border-radius: 0;
+  }
+}
+.dlg-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.dlg-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.dlg-head p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.dlg-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 20px;
+}
+.dlg-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--subtle) 45%, transparent);
+}
+
+/* ——— підказка ——— */
+.tk-tooltip-pane {
+  pointer-events: none;
+}
+.tk-tooltip {
+  max-width: 320px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  box-shadow: var(--shadow);
+  animation: tork-fade 120ms ease-out;
+}
+[data-theme='dark'] {
+  --av-l: 28%;
+  --av-t: 86%;
+}
+
+/* ——— вкладки ——— */
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font: 500 13px/1 var(--font-sans);
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: 6px 6px 0 0;
+  transition: color 120ms ease;
+}
+.tab:hover {
+  color: var(--text);
+}
+.tab::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background-color 150ms ease;
+}
+.tab.tab-active {
+  color: var(--text);
+}
+.tab.tab-active::after {
+  background: var(--accent);
+}
+.tab-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: var(--subtle);
+  color: var(--text-2);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* ——— сайдбар ——— */
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-2);
+  font: 500 13.5px/1 var(--font-sans);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+.nav-link > svg {
+  flex: none;
+  color: var(--text-3);
+  transition: color 120ms ease;
+}
+.nav-link:hover {
+  background: var(--subtle);
+  color: var(--text);
+}
+.nav-link.nav-active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 0 0 1px var(--border);
+}
+.nav-link.nav-active > svg {
+  color: var(--accent-ink);
+}
+.nav-badge {
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: var(--muted);
+  color: var(--text-2);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+.nav-badge-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.nav-active .nav-badge {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.shell-aside {
+  width: 232px;
+  transition: width 160ms var(--ease-out);
+}
+@media (min-width: 1024px) {
+  :root[data-sidebar='collapsed'] .shell-aside {
+    width: 60px;
+  }
+  :root[data-sidebar='collapsed'] .shell-aside .sb-label,
+  :root[data-sidebar='collapsed'] .shell-aside .nav-badge {
+    display: none;
+  }
+  :root[data-sidebar='collapsed'] .shell-aside .nav-link {
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+/* ——— табло ——— */
+.board-block {
+  touch-action: none;
+  user-select: none;
+}
+.board-block:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+  z-index: 17;
+}

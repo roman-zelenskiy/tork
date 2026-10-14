@@ -2,7 +2,11 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "cli": {
-    "packageManager": "npm"
+    "packageManager": "npm",
+    "schematicCollections": [
+      "angular-eslint"
+    ],
+    "analytics": "797ebc82-3954-4a76-a3e8-126c4dd0dc6f"
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -36,7 +40,7 @@
       },
       "root": "",
       "sourceRoot": "src",
-      "prefix": "app",
+      "prefix": "tk",
       "architect": {
         "build": {
           "builder": "@angular/build:application",
@@ -55,10 +59,16 @@
             "server": "src/main.server.ts",
             "outputMode": "server",
             "security": {
-              "allowedHosts": []
+              "allowedHosts": [
+                "localhost",
+                "127.0.0.1"
+              ]
             },
             "ssr": {
               "entry": "src/server.ts"
+            },
+            "define": {
+              "STATIC_BUILD": "false"
             }
           },
           "configurations": {
@@ -66,12 +76,12 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
+                  "maximumWarning": "700kB",
                   "maximumError": "1MB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
+                  "maximumWarning": "6kB",
                   "maximumError": "8kB"
                 }
               ],
@@ -81,6 +91,25 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "pages": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "700kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "outputMode": "static",
+              "define": {
+                "STATIC_BUILD": "true"
+              }
             }
           },
           "defaultConfiguration": "production"
@@ -96,6 +125,15 @@
             }
           },
           "defaultConfiguration": "development"
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "src/**/*.ts",
+              "src/**/*.html"
+            ]
+          }
         }
       }
     }

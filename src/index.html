@@ -1,13 +1,36 @@
 <!doctype html>
-<html lang="en">
+<html lang="uk">
 <head>
   <meta charset="utf-8">
-  <title>Tork</title>
+  <title>Торк — CRM для мережі СТО</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <meta name="description" content="Торк — робоча CRM для мережі автосервісів: табло постів, замовлення-наряди, акт прийому зі схемою кузова, погодження робіт клієнтом, склад, зарплата механіків і аналітика.">
+  <meta name="theme-color" content="#f6f4f0" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1b1a17" media="(prefers-color-scheme: dark)">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Торк — CRM для мережі СТО">
+  <meta property="og:description" content="Табло постів, наряди, акт прийому, погодження робіт клієнтом, склад і аналітика для автосервісу. Демо-проєкт для портфоліо.">
+  <meta property="og:image" content="og.png">
+  <meta property="og:locale" content="uk_UA">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+  <!-- тема до першої відмальовки: без «блимання» при перезавантаженні -->
+  <script>
+    (function () {
+      try {
+        var s = JSON.parse(localStorage.getItem('tork:settings') || '[]')[0] || {};
+        var t = s.theme === 'dark' || (s.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+        if (s.sidebarCollapsed) document.documentElement.setAttribute('data-sidebar', 'collapsed');
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
-  <app-root></app-root>
+  <tk-root></tk-root>
 </body>
 </html>
