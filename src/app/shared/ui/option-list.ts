@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, effect, inject, input, 
 import { Icon } from './icon';
 import { I } from '../icons';
 import { Option } from './option';
+import { L } from '../../core/i18n';
 
 /** Список опцій усередині випадаючої панелі. Фокус лишається на полі/кнопці (aria-activedescendant) */
 @Component({
@@ -68,7 +69,7 @@ export class OptionList<T> {
   readonly multiple = input(false);
   readonly listId = input.required<string>();
   readonly label = input<string | null>(null);
-  readonly emptyText = input('Нічого не знайдено');
+  readonly emptyText = input(L('Нічого не знайдено', 'Nothing found'));
   readonly active = model(0);
   readonly picked = output<Option<T>>();
 

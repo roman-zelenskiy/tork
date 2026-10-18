@@ -23,14 +23,15 @@ import { SignaturePad } from '../../shared/ui/signature-pad';
 import { Option } from '../../shared/ui/option';
 import { fmtDateTime, fmtKm } from '../../shared/format';
 import { BodyDiagram } from './body-diagram';
+import { L } from '../../core/i18n';
 
 type Kit = IntakeAct['kit'];
 const KIT: { key: Exclude<keyof Kit, 'keys'>; label: string }[] = [
-  { key: 'documents', label: 'Документи (техпаспорт)' },
-  { key: 'spare', label: 'Запасне колесо' },
-  { key: 'jack', label: 'Домкрат і ключ' },
-  { key: 'firstAid', label: 'Аптечка' },
-  { key: 'rugs', label: 'Килимки' },
+  { key: 'documents', label: L('Документи (техпаспорт)', 'Documents (registration)') },
+  { key: 'spare', label: L('Запасне колесо', 'Spare wheel') },
+  { key: 'jack', label: L('Домкрат і ключ', 'Jack and wrench') },
+  { key: 'firstAid', label: L('Аптечка', 'First aid kit') },
+  { key: 'rugs', label: L('Килимки', 'Floor mats') },
 ];
 
 /**
@@ -47,31 +48,31 @@ const KIT: { key: Exclude<keyof Kit, 'keys'>; label: string }[] = [
       <div class="skeleton mb-6 h-7 w-80"></div>
       <div class="grid gap-6 lg:grid-cols-[340px_1fr]"><div class="skeleton h-[520px]"></div><div class="skeleton h-[520px]"></div></div>
     } @else if (!order()) {
-      <tk-empty art="orders" title="Наряд не знайдено"><a routerLink="/naryady" class="btn">До нарядів</a></tk-empty>
+      <tk-empty art="orders" [title]="L('Наряд не знайдено', 'Work order not found')"><a routerLink="/naryady" class="btn">{{ L('До нарядів', 'To work orders') }}</a></tk-empty>
     } @else {
       @let o = order()!;
       <a [routerLink]="['/naryady', o.id]" class="mb-3 inline-flex items-center gap-1 rounded-md text-[13px] text-ink-2 hover:text-ink">
-        <svg [lucideIcon]="I.arrowLeft" [size]="14" aria-hidden="true"></svg>Наряд {{ o.number }}
+        <svg [lucideIcon]="I.arrowLeft" [size]="14" aria-hidden="true"></svg>{{ L('Наряд', 'Work order') }} {{ o.number }}
       </a>
       <header class="mb-5 flex flex-wrap items-end gap-3">
         <div class="min-w-0 flex-1 basis-72">
-          <h1 class="m-0 text-[22px] leading-tight font-semibold">Акт прийому</h1>
+          <h1 class="m-0 text-[22px] leading-tight font-semibold">{{ L('Акт прийому', 'Intake report') }}</h1>
           <p class="mt-1 mb-0 flex flex-wrap items-center gap-2 text-[13px] text-ink-2">
             @if (car(); as c) {
               <tk-plate [value]="c.plate" />{{ c.make }} {{ c.model }}, {{ client()?.name }}
             }
             @if (o.intake?.signedAt) {
-              <span class="badge badge-success">підписано {{ dt(o.intake!.signedAt!) }}</span>
+              <span class="badge badge-success">{{ L('підписано', 'signed') }} {{ dt(o.intake!.signedAt!) }}</span>
             }
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <a class="btn" [routerLink]="['/naryady', o.id, 'druk']" [queryParams]="{ forma: 'akt-pryiomu' }"><svg [lucideIcon]="I.printer" aria-hidden="true"></svg>Друк</a>
+          <a class="btn" [routerLink]="['/naryady', o.id, 'druk']" [queryParams]="{ forma: 'akt-pryiomu' }"><svg [lucideIcon]="I.printer" aria-hidden="true"></svg>{{ L('Друк', 'Print') }}</a>
           <button type="button" class="btn btn-primary" [disabled]="saving()" [attr.aria-busy]="saving()" (click)="save()">
             @if (saving()) {
               <svg [lucideIcon]="I.loader" class="animate-spin" aria-hidden="true"></svg>
             }
-            {{ o.status === 'zapys' ? 'Зберегти й прийняти авто' : 'Зберегти акт' }}
+            {{ o.status === 'zapys' ? L('Зберегти й прийняти авто', 'Save and accept car') : L('Зберегти акт', 'Save report') }}
           </button>
         </div>
       </header>
@@ -79,24 +80,24 @@ const KIT: { key: Exclude<keyof Kit, 'keys'>; label: string }[] = [
       <div class="grid gap-6 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]">
         <!-- схема -->
         <section class="card p-4" aria-labelledby="dg-h">
-          <h2 id="dg-h" class="m-0 mb-1 text-[15px] font-semibold">Стан кузова</h2>
-          <p class="m-0 mb-3 text-xs text-ink-3">Натисніть деталь, щоб позначити пошкодження</p>
+          <h2 id="dg-h" class="m-0 mb-1 text-[15px] font-semibold">{{ L('Стан кузова', 'Body condition') }}</h2>
+          <p class="m-0 mb-3 text-xs text-ink-3">{{ L('Натисніть деталь, щоб позначити пошкодження', 'Tap a panel to mark damage') }}</p>
           <tk-body-diagram [damages]="damages()" [selected]="zone()" (pick)="selectZone($event)" />
 
           @if (zone(); as z) {
-            <div class="animate-fade mt-4 rounded-lg border border-accent bg-accent-soft/40 p-3" role="region" [attr.aria-label]="'Пошкодження: ' + zoneLabel(z)">
+            <div class="animate-fade mt-4 rounded-lg border border-accent bg-accent-soft/40 p-3" role="region" [attr.aria-label]="L('Пошкодження: ', 'Damage: ') + zoneLabel(z)">
               <div class="mb-2 flex items-center">
                 <h3 class="m-0 flex-1 text-[13px] font-semibold">{{ zoneLabel(z) }}</h3>
-                <button type="button" class="btn btn-ghost btn-icon btn-sm" aria-label="Закрити" (click)="zone.set(null)"><svg [lucideIcon]="I.x" [size]="14" aria-hidden="true"></svg></button>
+                <button type="button" class="btn btn-ghost btn-icon btn-sm" [attr.aria-label]="L('Закрити', 'Close')" (click)="zone.set(null)"><svg [lucideIcon]="I.x" [size]="14" aria-hidden="true"></svg></button>
               </div>
-              <tk-radio-group variant="segmented" ariaLabel="Вид пошкодження" [options]="kindOptions" [(value)]="kind" />
-              <tk-text-field class="mt-2 block" size="sm" [(value)]="comment" placeholder="Коментар: 5 см, ліворуч від ручки" ariaLabel="Коментар до пошкодження" [maxLength]="120" (enter)="addDamage()" />
-              <tk-photo-upload class="mt-2" [(photos)]="photo" [max]="1" label="Фото пошкодження" />
-              <button type="button" class="btn btn-primary btn-sm mt-2 w-full" (click)="addDamage()"><svg [lucideIcon]="I.plus" aria-hidden="true"></svg>Додати: {{ kindLabel(kind() ?? 'scratch') }}</button>
+              <tk-radio-group variant="segmented" [ariaLabel]="L('Вид пошкодження', 'Damage type')" [options]="kindOptions" [(value)]="kind" />
+              <tk-text-field class="mt-2 block" size="sm" [(value)]="comment" [placeholder]="L('Коментар: 5 см, ліворуч від ручки', 'Comment: 5 cm, left of the handle')" [ariaLabel]="L('Коментар до пошкодження', 'Damage comment')" [maxLength]="120" (enter)="addDamage()" />
+              <tk-photo-upload class="mt-2" [(photos)]="photo" [max]="1" [label]="L('Фото пошкодження', 'Damage photo')" />
+              <button type="button" class="btn btn-primary btn-sm mt-2 w-full" (click)="addDamage()"><svg [lucideIcon]="I.plus" aria-hidden="true"></svg>{{ L('Додати', 'Add') }}: {{ kindLabel(kind() ?? 'scratch') }}</button>
             </div>
           }
 
-          <h3 class="mt-5 mb-2 text-[13px] font-semibold">Зафіксовано <span class="text-ink-3 num">{{ damages().length }}</span></h3>
+          <h3 class="mt-5 mb-2 text-[13px] font-semibold">{{ L('Зафіксовано', 'Recorded') }} <span class="text-ink-3 num">{{ damages().length }}</span></h3>
           <ul class="m-0 flex list-none flex-col gap-1.5 p-0">
             @for (d of damages(); track d.id) {
               <li class="flex items-center gap-2 rounded-md bg-subtle px-2 py-1.5 text-[13px]">
@@ -105,54 +106,54 @@ const KIT: { key: Exclude<keyof Kit, 'keys'>; label: string }[] = [
                   <img [src]="d.photo" alt="" class="size-7 rounded object-cover" />
                 }
                 <span class="min-w-0 flex-1">{{ kindLabel(d.kind) }}: {{ zoneLabel(d.zone).toLowerCase() }}@if (d.comment) {<span class="block truncate-1 text-xs text-ink-3">{{ d.comment }}</span>}</span>
-                <button type="button" class="btn btn-ghost btn-icon btn-sm" [attr.aria-label]="'Прибрати ' + kindLabel(d.kind) + ', ' + zoneLabel(d.zone)" (click)="removeDamage(d.id)"><svg [lucideIcon]="I.trash" [size]="14" aria-hidden="true"></svg></button>
+                <button type="button" class="btn btn-ghost btn-icon btn-sm" [attr.aria-label]="L('Прибрати ', 'Remove ') + kindLabel(d.kind) + ', ' + zoneLabel(d.zone)" (click)="removeDamage(d.id)"><svg [lucideIcon]="I.trash" [size]="14" aria-hidden="true"></svg></button>
               </li>
             } @empty {
-              <li class="text-[13px] text-ink-3">Пошкоджень не виявлено</li>
+              <li class="text-[13px] text-ink-3">{{ L('Пошкоджень не виявлено', 'No damage found') }}</li>
             }
           </ul>
         </section>
 
         <div class="flex min-w-0 flex-col gap-5">
           <section class="card grid gap-4 p-4 sm:grid-cols-2" aria-labelledby="st-h">
-            <h2 id="st-h" class="m-0 text-[15px] font-semibold sm:col-span-2">Пробіг і пальне</h2>
-            <tk-field forId="in-km" label="Пробіг" [required]="true" [error]="kmError()" [hint]="lastKmHint()">
-              <tk-text-field inputId="in-km" mask="money" suffix="км" [(value)]="km" [invalid]="!!kmError()" describedBy="in-km-err" />
+            <h2 id="st-h" class="m-0 text-[15px] font-semibold sm:col-span-2">{{ L('Пробіг і пальне', 'Mileage and fuel') }}</h2>
+            <tk-field forId="in-km" [label]="L('Пробіг', 'Mileage')" [required]="true" [error]="kmError()" [hint]="lastKmHint()">
+              <tk-text-field inputId="in-km" mask="money" [suffix]="L('км', 'km')" [(value)]="km" [invalid]="!!kmError()" describedBy="in-km-err" />
             </tk-field>
             <div class="field">
-              <span class="label" id="fuel-l">Пальне: <span class="num text-ink">{{ fuelText() }}</span></span>
+              <span class="label" id="fuel-l">{{ L('Пальне', 'Fuel') }}: <span class="num text-ink">{{ fuelText() }}</span></span>
               <div class="flex items-center gap-3 pt-1.5">
                 <svg [lucideIcon]="I.fuel" class="flex-none text-ink-3" aria-hidden="true"></svg>
-                <tk-slider class="flex-1" [(value)]="fuel" [step]="5" [ticks]="[25, 50, 75]" ariaLabel="Рівень пального" [valueText]="fuelValueText" [color]="fuel() <= 15 ? 'var(--danger)' : null" />
+                <tk-slider class="flex-1" [(value)]="fuel" [step]="5" [ticks]="[25, 50, 75]" [ariaLabel]="L('Рівень пального', 'Fuel level')" [valueText]="fuelValueText" [color]="fuel() <= 15 ? 'var(--danger)' : null" />
               </div>
-              <div class="flex justify-between pl-7 text-[11px] text-ink-3" aria-hidden="true"><span>0</span><span>¼</span><span>½</span><span>¾</span><span>повний</span></div>
+              <div class="flex justify-between pl-7 text-[11px] text-ink-3" aria-hidden="true"><span>0</span><span>¼</span><span>½</span><span>¾</span><span>{{ L('повний', 'full') }}</span></div>
             </div>
           </section>
 
           <section class="card p-4" aria-labelledby="kit-h">
-            <h2 id="kit-h" class="m-0 mb-3 text-[15px] font-semibold">Комплектність</h2>
+            <h2 id="kit-h" class="m-0 mb-3 text-[15px] font-semibold">{{ L('Комплектність', 'Contents') }}</h2>
             <div class="grid gap-x-4 gap-y-2.5 sm:grid-cols-2">
               @for (k of kitItems; track k.key) {
                 <tk-checkbox [checked]="kit()[k.key]" (changed)="setKit(k.key, $event)">{{ k.label }}</tk-checkbox>
               }
               <div class="flex items-center gap-3">
-                <span class="text-[13px]" id="keys-l">Ключів</span>
-                <tk-stepper class="w-28" size="sm" [value]="kit().keys" [min]="0" [max]="5" ariaLabel="Кількість ключів" (changed)="setKeys($event)" />
+                <span class="text-[13px]" id="keys-l">{{ L('Ключів', 'Keys') }}</span>
+                <tk-stepper class="w-28" size="sm" [value]="kit().keys" [min]="0" [max]="5" [ariaLabel]="L('Кількість ключів', 'Number of keys')" (changed)="setKeys($event)" />
               </div>
             </div>
           </section>
 
           <section class="card flex flex-col gap-4 p-4" aria-labelledby="cm-h">
-            <h2 id="cm-h" class="m-0 text-[15px] font-semibold">Скарги й побажання клієнта</h2>
-            <tk-text-field [multiline]="true" [rows]="3" [maxLength]="600" ariaLabel="Скарги клієнта" placeholder="Що турбує, коли проявляється, що вже робили" [(value)]="complaints" />
-            <tk-field forId="in-recv" label="Прийняв">
+            <h2 id="cm-h" class="m-0 text-[15px] font-semibold">{{ L('Скарги й побажання клієнта', 'Customer complaints and requests') }}</h2>
+            <tk-text-field [multiline]="true" [rows]="3" [maxLength]="600" [ariaLabel]="L('Скарги клієнта', 'Customer complaints')" [placeholder]="L('Що турбує, коли проявляється, що вже робили', 'What’s wrong, when it happens, what’s been tried')" [(value)]="complaints" />
+            <tk-field forId="in-recv" [label]="L('Прийняв', 'Received by')">
               <tk-select inputId="in-recv" [options]="staffOptions()" [(value)]="receivedBy" />
             </tk-field>
           </section>
 
           <section class="card p-4" aria-labelledby="sg-h">
-            <h2 id="sg-h" class="m-0 mb-1 text-[15px] font-semibold">Підпис клієнта</h2>
-            <p class="m-0 mb-3 text-xs text-ink-2">Клієнт підтверджує стан авто, комплектність і згоду на діагностику.</p>
+            <h2 id="sg-h" class="m-0 mb-1 text-[15px] font-semibold">{{ L('Підпис клієнта', 'Customer signature') }}</h2>
+            <p class="m-0 mb-3 text-xs text-ink-2">{{ L('Клієнт підтверджує стан авто, комплектність і згоду на діагностику.', 'The customer confirms the car’s condition, its contents and consent to diagnostics.') }}</p>
             <tk-signature-pad [(value)]="signature" />
           </section>
         </div>
@@ -162,6 +163,7 @@ const KIT: { key: Exclude<keyof Kit, 'keys'>; label: string }[] = [
   `,
 })
 export class IntakePage implements HasUnsaved {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly db = inject(DbService);
   private readonly orders = inject(OrdersService);
@@ -202,14 +204,14 @@ export class IntakePage implements HasUnsaved {
   protected readonly kmError = computed(() => {
     if (!this.tried()) return null;
     const v = Number(this.km() || 0);
-    if (!v) return 'Вкажіть пробіг з одометра';
+    if (!v) return L('Вкажіть пробіг з одометра', 'Enter the odometer reading');
     const car = this.car();
-    if (car && v < car.mileage - 5) return `Менше за попередній (${fmtKm(car.mileage)}) — перевірте`;
+    if (car && v < car.mileage - 5) return L(`Менше за попередній (${fmtKm(car.mileage)}) — перевірте`, `Lower than last time (${fmtKm(car.mileage)}) — please check`);
     return null;
   });
-  protected readonly lastKmHint = computed(() => (this.car() ? `Попередній: ${fmtKm(this.car()!.mileage)}` : null));
+  protected readonly lastKmHint = computed(() => (this.car() ? L(`Попередній: ${fmtKm(this.car()!.mileage)}`, `Previous: ${fmtKm(this.car()!.mileage)}`) : null));
   protected readonly fuelText = computed(() => this.fuelValueText(this.fuel()));
-  protected readonly fuelValueText = (v: number) => (v === 0 ? 'порожній бак' : v === 100 ? 'повний бак' : `${v}%`);
+  protected readonly fuelValueText = (v: number) => (v === 0 ? L('порожній бак', 'empty tank') : v === 100 ? L('повний бак', 'full tank') : `${v}%`);
 
   constructor() {
     let loaded = '';
@@ -217,7 +219,7 @@ export class IntakePage implements HasUnsaved {
       const o = this.order();
       if (!o || loaded === o.id) return;
       loaded = o.id;
-      this.titles.set(`Акт прийому ${o.number}`);
+      this.titles.set(L(`Акт прийому ${o.number}`, `Intake report ${o.number}`));
       const a = o.intake;
       this.damages.set(a?.damages ?? []);
       this.km.set(a ? String(a.mileage) : o.mileage ? String(o.mileage) : '');
@@ -256,7 +258,7 @@ export class IntakePage implements HasUnsaved {
     const z = this.zone();
     if (!z) return;
     this.damages.update((d) => [...d, { id: newId('dm'), zone: z, kind: this.kind() ?? 'scratch', comment: this.comment().trim(), photo: this.photo()[0] ?? null }]);
-    this.announce.set(`Додано: ${DAMAGE_LABEL[this.kind() ?? 'scratch']}, ${ZONE_LABEL[z].toLowerCase()}`);
+    this.announce.set(`${L('Додано', 'Added')}: ${DAMAGE_LABEL[this.kind() ?? 'scratch']}, ${ZONE_LABEL[z].toLowerCase()}`);
     this.zone.set(null);
   }
   protected removeDamage(id: string): void {
@@ -290,11 +292,11 @@ export class IntakePage implements HasUnsaved {
     };
     this.saving.set(true);
     try {
-      await this.db.orders.update(o.id, { intake: act, mileage }, { log: `${o.number}: акт прийому${act.signature ? ' підписано' : ' збережено'}` });
+      await this.db.orders.update(o.id, { intake: act, mileage }, { log: act.signature ? L(`${o.number}: акт прийому підписано`, `${o.number}: intake report signed`) : L(`${o.number}: акт прийому збережено`, `${o.number}: intake report saved`) });
       if (o.status === 'zapys') await this.orders.setStatus(this.db.orders.get(o.id)!, 'pryiom');
       this.initial = this.snap();
-      this.toast.success(o.status === 'zapys' ? `Авто прийнято, ${o.number} у статусі «Прийом»` : 'Акт прийому збережено', {
-        label: 'До наряду',
+      this.toast.success(o.status === 'zapys' ? L(`Авто прийнято, ${o.number} у статусі «Прийом»`, `Car accepted, ${o.number} is now in “Intake”`) : L('Акт прийому збережено', 'Intake report saved'), {
+        label: L('До наряду', 'To work order'),
         run: () => void this.router.navigate(['/naryady', o.id]),
       });
     } catch (e) {

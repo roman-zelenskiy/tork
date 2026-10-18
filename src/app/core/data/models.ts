@@ -2,6 +2,7 @@
  * Моделі даних «Торка». Кожна сутність зберігається окремим ключем localStorage
  * як JSON-масив об’єктів з id, createdAt, updatedAt (див. ENTITY_KEYS).
  */
+import { L, STORE_PREFIX } from '../i18n';
 
 export interface Entity {
   id: string;
@@ -419,28 +420,28 @@ export interface Settings extends Entity {
   slotMin: number;
 }
 
-/** Ключі localStorage для кожної сутності — читабельні в DevTools → Application → Local Storage */
+/** Ключі localStorage для кожної сутності (префікс залежить від мови збірки) — читабельні в DevTools → Application → Local Storage */
 export const ENTITY_KEYS = {
-  branches: 'tork:branches',
-  posts: 'tork:posts',
-  employees: 'tork:employees',
-  clients: 'tork:clients',
-  cars: 'tork:cars',
-  orders: 'tork:orders',
-  works: 'tork:works',
-  parts: 'tork:parts',
-  movements: 'tork:stock-movements',
-  suppliers: 'tork:suppliers',
-  purchases: 'tork:purchase-orders',
-  approvals: 'tork:approvals',
-  reminders: 'tork:reminders',
-  rules: 'tork:reminder-rules',
-  templates: 'tork:message-templates',
-  mailings: 'tork:mailings',
-  activity: 'tork:activity-log',
-  notifications: 'tork:notifications',
-  views: 'tork:saved-views',
-  settings: 'tork:settings',
+  branches: `${STORE_PREFIX}branches`,
+  posts: `${STORE_PREFIX}posts`,
+  employees: `${STORE_PREFIX}employees`,
+  clients: `${STORE_PREFIX}clients`,
+  cars: `${STORE_PREFIX}cars`,
+  orders: `${STORE_PREFIX}orders`,
+  works: `${STORE_PREFIX}works`,
+  parts: `${STORE_PREFIX}parts`,
+  movements: `${STORE_PREFIX}stock-movements`,
+  suppliers: `${STORE_PREFIX}suppliers`,
+  purchases: `${STORE_PREFIX}purchase-orders`,
+  approvals: `${STORE_PREFIX}approvals`,
+  reminders: `${STORE_PREFIX}reminders`,
+  rules: `${STORE_PREFIX}reminder-rules`,
+  templates: `${STORE_PREFIX}message-templates`,
+  mailings: `${STORE_PREFIX}mailings`,
+  activity: `${STORE_PREFIX}activity-log`,
+  notifications: `${STORE_PREFIX}notifications`,
+  views: `${STORE_PREFIX}saved-views`,
+  settings: `${STORE_PREFIX}settings`,
 } as const;
 
 export interface EntityMap {
@@ -466,5 +467,13 @@ export interface EntityMap {
   settings: Settings;
 }
 
-export const META_KEY = 'tork:meta';
+/** Теги клієнтів, від яких залежить логіка: знижка в наряді, фільтр автопарків */
+export const TAG_DISCOUNT = L('знижка 5%', '5% discount');
+export const TAG_FLEET = L('автопарк', 'fleet');
+
+/** Префікси номерів наряду й замовлення постачальнику */
+export const ORDER_PREFIX = L('Н-', 'WO-');
+export const PURCHASE_PREFIX = L('ЗАМ-', 'PO-');
+
+export const META_KEY = `${STORE_PREFIX}meta`;
 export const SCHEMA_VERSION = 7;

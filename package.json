@@ -9,7 +9,8 @@
     "test": "ng test",
     "serve:ssr:tork": "node dist/tork/server/server.mjs",
     "lint": "ng lint",
-    "build:pages": "ng build --configuration pages"
+    "build:pages": "node scripts/build-pages.mjs",
+    "start:en": "ng serve -c en"
   },
   "private": true,
   "packageManager": "npm@10.9.8",

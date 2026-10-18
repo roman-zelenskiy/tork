@@ -16,6 +16,7 @@ import { Icon } from './icon';
 import { I, IconNode } from '../icons';
 import { OptionList } from './option-list';
 import { DROPDOWN_POSITIONS, Option, filterOptions, navKey, nextId } from './option';
+import { L } from '../../core/i18n';
 
 /**
  * Combobox: поле з автодоповненням. Шукає в options або через асинхронний search(query).
@@ -63,7 +64,7 @@ import { DROPDOWN_POSITIONS, Option, filterOptions, navKey, nextId } from './opt
       @if (loading()) {
         <svg [lucideIcon]="I.loader" class="animate-spin" aria-hidden="true"></svg>
       } @else if (value() !== null && !disabled()) {
-        <button type="button" class="-mr-1 grid size-6 place-items-center rounded-md text-ink-3 hover:bg-subtle hover:text-ink" aria-label="Очистити" (click)="clear()">
+        <button type="button" class="-mr-1 grid size-6 place-items-center rounded-md text-ink-3 hover:bg-subtle hover:text-ink" [attr.aria-label]="L('Очистити', 'Clear')" (click)="clear()">
           <svg [lucideIcon]="I.x" [size]="14" aria-hidden="true"></svg>
         </button>
       }
@@ -85,7 +86,7 @@ import { DROPDOWN_POSITIONS, Option, filterOptions, navKey, nextId } from './opt
           [isSelected]="isSelected"
           [listId]="listId"
           [label]="ariaLabel()"
-          [emptyText]="query().trim() ? 'Нічого не знайдено' : emptyHint()"
+          [emptyText]="query().trim() ? L('Нічого не знайдено', 'Nothing found') : emptyHint()"
           [(active)]="active"
           (picked)="pick($event)"
         />
@@ -100,6 +101,7 @@ import { DROPDOWN_POSITIONS, Option, filterOptions, navKey, nextId } from './opt
   `,
 })
 export class Combobox<T> {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly positions = DROPDOWN_POSITIONS;
   protected readonly listId = nextId('cb');
@@ -110,8 +112,8 @@ export class Combobox<T> {
   readonly value = model<T | null>(null);
   /** Підпис обраного значення (якщо його немає в поточних results) */
   readonly valueLabel = input<string | null>(null);
-  readonly placeholder = input('Почніть вводити…');
-  readonly emptyHint = input('Введіть кілька літер');
+  readonly placeholder = input(L('Почніть вводити…', 'Start typing…'));
+  readonly emptyHint = input(L('Введіть кілька літер', 'Type a few letters'));
   readonly createLabel = input<string | null>(null);
   readonly invalid = input(false);
   readonly disabled = input(false);

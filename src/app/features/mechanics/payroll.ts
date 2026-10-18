@@ -7,8 +7,12 @@ import { DateRange, DateRangePicker, PERIOD_PRESETS } from '../../shared/ui/date
 import { Avatar } from '../../shared/ui/display';
 import { fmtHours, fmtMoney, fmtPct } from '../../shared/format';
 import { MechanicsHeader } from './mechanics-header';
+import { BRAND, L } from '../../core/i18n';
 
-const ROLE: Record<Employee['role'], string> = { mechanic: 'Механік', receptionist: 'Майстер-приймальник', manager: 'Керівник', storekeeper: 'Комірник' };
+const ROLE: Record<Employee['role'], string> = L(
+  { mechanic: 'Механік', receptionist: 'Майстер-приймальник', manager: 'Керівник', storekeeper: 'Комірник' },
+  { mechanic: 'Mechanic', receptionist: 'Service advisor', manager: 'Manager', storekeeper: 'Storekeeper' },
+);
 type Row = Employee & { p: { norm: number; revenue: number; piece: number; base: number; total: number; eff: number | null; branch: string } };
 
 /**
@@ -20,14 +24,14 @@ type Row = Employee & { p: { norm: number; revenue: number; piece: number; base:
   imports: [DataTable, CellDef, DateRangePicker, Avatar, MechanicsHeader],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <tk-mechanics-header title="Зарплата" [subtitle]="db.ready() ? 'Разом до виплати: ' + money(total()) : null">
+    <tk-mechanics-header [title]="L('Зарплата', 'Payroll')" [subtitle]="db.ready() ? L('Разом до виплати: ', 'Total payable: ') + money(total()) : null">
       <tk-date-range class="w-56" [(value)]="period" />
     </tk-mechanics-header>
     <tk-data-table
       tableId="payroll"
       csvName="zarplata"
-      ariaLabel="Зарплата"
-      searchPlaceholder="Співробітник…"
+      [ariaLabel]="L('Зарплата', 'Payroll')"
+      [searchPlaceholder]="L('Співробітник…', 'Employee…')"
       [rows]="rows()"
       [columns]="columns"
       [filters]="filters()"
@@ -35,17 +39,18 @@ type Row = Employee & { p: { norm: number; revenue: number; piece: number; base:
       [loading]="!db.ready()"
       [defaultSort]="{ key: 'total', dir: 'desc' }"
       emptyArt="clients"
-      emptyTitle="Співробітників немає"
+      [emptyTitle]="L('Співробітників немає', 'No employees')"
     >
       <ng-template tkCell="name" let-r>
         <span class="flex items-center gap-2.5"><tk-avatar [name]="r.name" /><span><span class="block font-medium">{{ r.name }}</span><span class="block text-xs text-ink-3">{{ role(r) }}, {{ r.p.branch }}</span></span></span>
       </ng-template>
       <ng-template tkCell="total" let-r><span class="font-semibold">{{ money(r.p.total) }}</span></ng-template>
     </tk-data-table>
-    <p class="mt-3 text-xs text-ink-3">Враховано роботи у виданих нарядах (дата видачі в періоді). Оклад — пропорційно до кількості днів періоду.</p>
+    <p class="mt-3 text-xs text-ink-3">{{ L('Враховано роботи у виданих нарядах (дата видачі в періоді). Оклад — пропорційно до кількості днів періоду.', 'Counts jobs in work orders handed over within the period. Base salary is prorated by the number of days.') }}</p>
   `,
 })
 export class Payroll {
+  protected readonly L = L;
   protected readonly db = inject(DbService);
   private readonly mech = inject(MechanicsService);
   protected readonly money = fmtMoney;
@@ -64,25 +69,25 @@ export class Payroll {
         const s = e.role === 'mechanic' ? this.mech.stats(e.id, from, to) : null;
         const piece = s ? Math.round((s.revenue * e.payPercent) / 100) : 0;
         const base = Math.round((e.baseSalary * Math.min(days, 31)) / 30);
-        return { ...e, p: { norm: s?.normHours ?? 0, revenue: s?.revenue ?? 0, piece, base, total: piece + base, eff: s?.efficiency ?? null, branch: this.db.branches.get(e.branchId)?.name.replace('Торк ', '') ?? '' } };
+        return { ...e, p: { norm: s?.normHours ?? 0, revenue: s?.revenue ?? 0, piece, base, total: piece + base, eff: s?.efficiency ?? null, branch: this.db.branches.get(e.branchId)?.name.replace(`${BRAND} `, '') ?? '' } };
       });
   });
   protected readonly total = computed(() => this.rows().reduce((s, r) => s + r.p.total, 0));
 
   protected readonly columns: Column<Row>[] = [
-    { key: 'name', label: 'Співробітник', value: (r) => r.name, required: true },
-    { key: 'norm', label: 'Нормо-год', value: (r) => r.p.norm, format: (r) => (r.role === 'mechanic' ? fmtHours(r.p.norm) : '—'), align: 'right' },
-    { key: 'eff', label: 'Ефективність', value: (r) => r.p.eff, format: (r) => (r.p.eff !== null ? fmtPct(r.p.eff) : '—'), align: 'right' },
-    { key: 'revenue', label: 'Виручка робіт', value: (r) => r.p.revenue, format: (r) => (r.role === 'mechanic' ? fmtMoney(r.p.revenue) : '—'), align: 'right' },
+    { key: 'name', label: L('Співробітник', 'Employee'), value: (r) => r.name, required: true },
+    { key: 'norm', label: L('Нормо-год', 'Std hrs'), value: (r) => r.p.norm, format: (r) => (r.role === 'mechanic' ? fmtHours(r.p.norm) : '—'), align: 'right' },
+    { key: 'eff', label: L('Ефективність', 'Efficiency'), value: (r) => r.p.eff, format: (r) => (r.p.eff !== null ? fmtPct(r.p.eff) : '—'), align: 'right' },
+    { key: 'revenue', label: L('Виручка робіт', 'Labour revenue'), value: (r) => r.p.revenue, format: (r) => (r.role === 'mechanic' ? fmtMoney(r.p.revenue) : '—'), align: 'right' },
     { key: 'pct', label: '%', value: (r) => r.payPercent, format: (r) => (r.payPercent ? `${r.payPercent}%` : '—'), align: 'right' },
-    { key: 'piece', label: 'Відсоток', value: (r) => r.p.piece, format: (r) => fmtMoney(r.p.piece), align: 'right' },
-    { key: 'base', label: 'Оклад', value: (r) => r.p.base, format: (r) => fmtMoney(r.p.base), align: 'right' },
-    { key: 'total', label: 'Разом', value: (r) => r.p.total, csv: (r) => r.p.total, align: 'right' },
+    { key: 'piece', label: L('Відсоток', 'Commission'), value: (r) => r.p.piece, format: (r) => fmtMoney(r.p.piece), align: 'right' },
+    { key: 'base', label: L('Оклад', 'Base'), value: (r) => r.p.base, format: (r) => fmtMoney(r.p.base), align: 'right' },
+    { key: 'total', label: L('Разом', 'Total'), value: (r) => r.p.total, csv: (r) => r.p.total, align: 'right' },
   ];
 
   protected readonly filters = computed<FilterDef<Row>[]>(() => [
-    { key: 'branch', label: 'Філія', options: this.db.branches.items().map((b) => ({ value: b.id, label: b.name })), match: (r, v) => v.includes(r.branchId) },
-    { key: 'role', label: 'Роль', options: (Object.keys(ROLE) as Employee['role'][]).map((k) => ({ value: k, label: ROLE[k] })), match: (r, v) => v.includes(r.role) },
+    { key: 'branch', label: L('Філія', 'Branch'), options: this.db.branches.items().map((b) => ({ value: b.id, label: b.name })), match: (r, v) => v.includes(r.branchId) },
+    { key: 'role', label: L('Роль', 'Role'), options: (Object.keys(ROLE) as Employee['role'][]).map((k) => ({ value: k, label: ROLE[k] })), match: (r, v) => v.includes(r.role) },
   ]);
 
   protected role(e: Employee): string {

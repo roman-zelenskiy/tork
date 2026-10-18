@@ -27,6 +27,7 @@ import { Chart, ChartPalette, baseOption } from '../../shared/chart/chart';
 import { PhotoViewer } from '../../shared/ui/photo-viewer';
 import { fmtDate, fmtDateShort, fmtKm, fmtMoney, fmtNum, fmtPhone } from '../../shared/format';
 import { CarForm } from './car-form';
+import { L } from '../../core/i18n';
 
 /** Передача авто іншому клієнту */
 @Component({
@@ -34,21 +35,22 @@ import { CarForm } from './car-form';
   imports: [Combobox],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="dlg-head"><div><h2>Змінити власника</h2><p>Попередній власник лишиться в історії авто.</p></div></div>
+    <div class="dlg-head"><div><h2>{{ L('Змінити власника', 'Change owner') }}</h2><p>{{ L('Попередній власник лишиться в історії авто.', 'The previous owner stays in the car’s history.') }}</p></div></div>
     <div class="dlg-body">
-      <label class="label mb-1.5 block" for="tr-client">Новий власник</label>
-      <tk-combobox inputId="tr-client" [options]="options()" [(value)]="clientId" [icon]="I.user" placeholder="Ім’я або телефон" [invalid]="tried() && !clientId()" />
+      <label class="label mb-1.5 block" for="tr-client">{{ L('Новий власник', 'New owner') }}</label>
+      <tk-combobox inputId="tr-client" [options]="options()" [(value)]="clientId" [icon]="I.user" [placeholder]="L('Ім’я або телефон', 'Name or phone')" [invalid]="tried() && !clientId()" />
       @if (tried() && !clientId()) {
-        <span class="error-text mt-1.5">Оберіть клієнта</span>
+        <span class="error-text mt-1.5">{{ L('Оберіть клієнта', 'Choose a customer') }}</span>
       }
     </div>
     <div class="dlg-foot">
-      <button type="button" class="btn" (click)="ref.close()">Скасувати</button>
-      <button type="button" class="btn btn-primary" (click)="ok()">Передати авто</button>
+      <button type="button" class="btn" (click)="ref.close()">{{ L('Скасувати', 'Cancel') }}</button>
+      <button type="button" class="btn btn-primary" (click)="ok()">{{ L('Передати авто', 'Transfer car') }}</button>
     </div>
   `,
 })
 export class TransferDialog {
+  protected readonly L = L;
   protected readonly I = I;
   private readonly db = inject(DbService);
   protected readonly ref = inject<DialogRef<string>>(DialogRef);
@@ -83,8 +85,8 @@ export class TransferDialog {
         <div class="card p-4"><tk-skeleton [rows]="6" [cols]="2" /></div>
       </div>
     } @else if (!car()) {
-      <tk-empty art="car" title="Авто не знайдено" text="Можливо, його видалили в іншій вкладці.">
-        <a routerLink="/kliyenty" class="btn">До клієнтів</a>
+      <tk-empty art="car" [title]="L('Авто не знайдено', 'Car not found')" [text]="L('Можливо, його видалили в іншій вкладці.', 'It may have been deleted in another tab.')">
+        <a routerLink="/kliyenty" class="btn">{{ L('До клієнтів', 'To customers') }}</a>
       </tk-empty>
     } @else {
       @let c = car()!;
@@ -101,7 +103,7 @@ export class TransferDialog {
             <tk-plate [value]="c.plate" />
             <span class="inline-flex items-center gap-1 mono">
               {{ c.vin }}
-              <button type="button" class="btn btn-ghost btn-icon btn-sm" aria-label="Скопіювати VIN" tkTip="Скопіювати VIN" (click)="copyVin(c.vin)">
+              <button type="button" class="btn btn-ghost btn-icon btn-sm" [attr.aria-label]="L('Скопіювати VIN', 'Copy VIN')" [tkTip]="L('Скопіювати VIN', 'Copy VIN')" (click)="copyVin(c.vin)">
                 <svg [lucideIcon]="I.copy" [size]="14" aria-hidden="true"></svg>
               </button>
             </span>
@@ -110,15 +112,15 @@ export class TransferDialog {
         </div>
         <div class="flex flex-wrap gap-2">
           <button type="button" class="btn btn-primary" (click)="quick.newOrder({ clientId: c.clientId, carId: c.id })">
-            <svg [lucideIcon]="I.plus" aria-hidden="true"></svg>Новий наряд
+            <svg [lucideIcon]="I.plus" aria-hidden="true"></svg>{{ L('Новий наряд', 'New work order') }}
           </button>
-          <button type="button" class="btn" (click)="edit()"><svg [lucideIcon]="I.edit" aria-hidden="true"></svg>Редагувати</button>
-          <button type="button" class="btn btn-icon" [cdkMenuTriggerFor]="more" aria-label="Інші дії"><svg [lucideIcon]="I.more" aria-hidden="true"></svg></button>
+          <button type="button" class="btn" (click)="edit()"><svg [lucideIcon]="I.edit" aria-hidden="true"></svg>{{ L('Редагувати', 'Edit') }}</button>
+          <button type="button" class="btn btn-icon" [cdkMenuTriggerFor]="more" [attr.aria-label]="L('Інші дії', 'More actions')"><svg [lucideIcon]="I.more" aria-hidden="true"></svg></button>
           <ng-template #more>
             <div class="menu" cdkMenu>
-              <button type="button" class="menu-item" cdkMenuItem (cdkMenuItemTriggered)="transfer()"><svg [lucideIcon]="I.transfer" aria-hidden="true"></svg>Змінити власника</button>
+              <button type="button" class="menu-item" cdkMenuItem (cdkMenuItemTriggered)="transfer()"><svg [lucideIcon]="I.transfer" aria-hidden="true"></svg>{{ L('Змінити власника', 'Change owner') }}</button>
               <div class="menu-sep"></div>
-              <button type="button" class="menu-item danger" cdkMenuItem (cdkMenuItemTriggered)="remove()"><svg [lucideIcon]="I.trash" aria-hidden="true"></svg>Видалити авто</button>
+              <button type="button" class="menu-item danger" cdkMenuItem (cdkMenuItemTriggered)="remove()"><svg [lucideIcon]="I.trash" aria-hidden="true"></svg>{{ L('Видалити авто', 'Delete car') }}</button>
             </div>
           </ng-template>
         </div>
@@ -128,20 +130,20 @@ export class TransferDialog {
         <div class="flex min-w-0 flex-col gap-6">
           <section class="card p-4" aria-labelledby="km-h">
             <div class="mb-3 flex flex-wrap items-baseline gap-x-3">
-              <h2 id="km-h" class="m-0 flex-1 text-[15px] font-semibold">Пробіг</h2>
+              <h2 id="km-h" class="m-0 flex-1 text-[15px] font-semibold">{{ L('Пробіг', 'Mileage') }}</h2>
               @if (perMonth()) {
-                <span class="text-[13px] text-ink-2">≈ {{ num(perMonth()!) }} км на місяць</span>
+                <span class="text-[13px] text-ink-2">≈ {{ num(perMonth()!) }} {{ L('км на місяць', 'km a month') }}</span>
               }
             </div>
             @if (mileagePoints().length > 1) {
-              <tk-chart [build]="mileageChart" [height]="200" [label]="'Графік пробігу: від ' + km(mileagePoints()[0][1]) + ' до ' + km(c.mileage)" />
+              <tk-chart [build]="mileageChart" [height]="200" [label]="L('Графік пробігу: від ', 'Mileage chart: from ') + km(mileagePoints()[0][1]) + L(' до ', ' to ') + km(c.mileage)" />
             } @else {
-              <p class="m-0 py-6 text-center text-[13px] text-ink-3">Графік з’явиться після кількох візитів із записаним пробігом.</p>
+              <p class="m-0 py-6 text-center text-[13px] text-ink-3">{{ L('Графік з’явиться після кількох візитів із записаним пробігом.', 'The chart appears after a few visits with recorded mileage.') }}</p>
             }
           </section>
 
           <section aria-labelledby="tl-h">
-            <h2 id="tl-h" class="m-0 mb-3 text-[15px] font-semibold">Історія візитів</h2>
+            <h2 id="tl-h" class="m-0 mb-3 text-[15px] font-semibold">{{ L('Історія візитів', 'Visit history') }}</h2>
             @if (orders().length) {
               <ol class="relative m-0 list-none p-0 pl-5 before:absolute before:top-2 before:bottom-2 before:left-[5px] before:w-px before:bg-line-strong">
                 @for (o of orders(); track o.id) {
@@ -163,40 +165,40 @@ export class TransferDialog {
                 }
               </ol>
             } @else {
-              <div class="card"><tk-empty art="orders" title="Візитів ще не було" [compact]="true" /></div>
+              <div class="card"><tk-empty art="orders" [title]="L('Візитів ще не було', 'No visits yet')" [compact]="true" /></div>
             }
           </section>
         </div>
 
         <aside class="flex min-w-0 flex-col gap-6">
           <section class="card p-4" aria-labelledby="spec-h">
-            <h2 id="spec-h" class="m-0 mb-3 text-[15px] font-semibold">Характеристики</h2>
+            <h2 id="spec-h" class="m-0 mb-3 text-[15px] font-semibold">{{ L('Характеристики', 'Specifications') }}</h2>
             <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[13px]">
-              <dt class="text-ink-2">Двигун</dt><dd class="m-0">{{ c.engine || '—' }}</dd>
-              <dt class="text-ink-2">КПП</dt><dd class="m-0">{{ c.gearbox || '—' }}</dd>
-              <dt class="text-ink-2">Колір</dt><dd class="m-0">{{ c.color || '—' }}</dd>
-              <dt class="text-ink-2">Країна</dt><dd class="m-0">{{ decoded()?.country ?? '—' }}</dd>
-              <dt class="text-ink-2">Рік</dt><dd class="m-0 num">{{ c.year }}</dd>
+              <dt class="text-ink-2">{{ L('Двигун', 'Engine') }}</dt><dd class="m-0">{{ c.engine || '—' }}</dd>
+              <dt class="text-ink-2">{{ L('КПП', 'Gearbox') }}</dt><dd class="m-0">{{ c.gearbox || '—' }}</dd>
+              <dt class="text-ink-2">{{ L('Колір', 'Colour') }}</dt><dd class="m-0">{{ c.color || '—' }}</dd>
+              <dt class="text-ink-2">{{ L('Країна', 'Country') }}</dt><dd class="m-0">{{ decoded()?.country ?? '—' }}</dd>
+              <dt class="text-ink-2">{{ L('Рік', 'Year') }}</dt><dd class="m-0 num">{{ c.year }}</dd>
             </dl>
           </section>
 
           <section class="card p-4" aria-labelledby="done-h">
-            <h2 id="done-h" class="m-0 mb-3 text-[15px] font-semibold">Виконані роботи</h2>
+            <h2 id="done-h" class="m-0 mb-3 text-[15px] font-semibold">{{ L('Виконані роботи', 'Completed work') }}</h2>
             @for (w of doneWorks().slice(0, doneLimit()); track $index) {
               <div class="flex gap-2 border-t border-line py-2 text-[13px] first:border-0 first:pt-0">
                 <span class="min-w-0 flex-1">{{ w.name }}</span>
                 <span class="flex-none text-xs text-ink-3 num">{{ short(w.at) }}</span>
               </div>
             } @empty {
-              <p class="m-0 text-[13px] text-ink-3">Ще нічого не виконували</p>
+              <p class="m-0 text-[13px] text-ink-3">{{ L('Ще нічого не виконували', 'Nothing done yet') }}</p>
             }
             @if (doneWorks().length > doneLimit()) {
-              <button type="button" class="btn btn-ghost btn-sm mt-1 -ml-2" (click)="doneLimit.set(100)">Усі {{ doneWorks().length }}</button>
+              <button type="button" class="btn btn-ghost btn-sm mt-1 -ml-2" (click)="doneLimit.set(100)">{{ L('Усі', 'All') }} {{ doneWorks().length }}</button>
             }
           </section>
 
           <section class="card p-4" aria-labelledby="def-h">
-            <h2 id="def-h" class="m-0 mb-3 text-[15px] font-semibold">Відкладені роботи</h2>
+            <h2 id="def-h" class="m-0 mb-3 text-[15px] font-semibold">{{ L('Відкладені роботи', 'Deferred work') }}</h2>
             @for (r of deferred(); track r.id) {
               <div class="flex gap-2 border-t border-line py-2 text-[13px] first:border-0 first:pt-0">
                 <svg [lucideIcon]="I.clock" class="mt-0.5 flex-none text-accent-ink" aria-hidden="true"></svg>
@@ -204,37 +206,37 @@ export class TransferDialog {
                 <span class="flex-none num text-ink-2">{{ money(r.amount) }}</span>
               </div>
             } @empty {
-              <p class="m-0 text-[13px] text-ink-3">Немає</p>
+              <p class="m-0 text-[13px] text-ink-3">{{ L('Немає', 'None') }}</p>
             }
           </section>
 
           <section class="card p-4" aria-labelledby="dmg-h">
-            <h2 id="dmg-h" class="m-0 mb-3 text-[15px] font-semibold">Пошкодження з актів прийому</h2>
+            <h2 id="dmg-h" class="m-0 mb-3 text-[15px] font-semibold">{{ L('Пошкодження з актів прийому', 'Damage from intake reports') }}</h2>
             @for (d of damages(); track d.id) {
               <div class="flex items-start gap-2 border-t border-line py-2 text-[13px] first:border-0 first:pt-0">
                 @if (d.photo) {
-                  <button type="button" class="size-10 flex-none overflow-hidden rounded-md border border-line" [attr.aria-label]="'Фото: ' + zone(d.zone)" (click)="viewPhoto(d.photo)">
+                  <button type="button" class="size-10 flex-none overflow-hidden rounded-md border border-line" [attr.aria-label]="L('Фото: ', 'Photo: ') + zone(d.zone)" (click)="viewPhoto(d.photo)">
                     <img [src]="d.photo" alt="" class="size-full object-cover" />
                   </button>
                 }
                 <span class="min-w-0 flex-1">{{ dmg(d.kind) }}: {{ zone(d.zone) }}<span class="block text-xs text-ink-3">{{ short(d.at) }}{{ d.comment ? ', ' + d.comment : '' }}</span></span>
               </div>
             } @empty {
-              <p class="m-0 text-[13px] text-ink-3">Не зафіксовано</p>
+              <p class="m-0 text-[13px] text-ink-3">{{ L('Не зафіксовано', 'None recorded') }}</p>
             }
           </section>
 
           <section class="card p-4" aria-labelledby="own-h">
-            <h2 id="own-h" class="m-0 mb-3 text-[15px] font-semibold">Власники</h2>
+            <h2 id="own-h" class="m-0 mb-3 text-[15px] font-semibold">{{ L('Власники', 'Owners') }}</h2>
             <ol class="m-0 flex list-none flex-col gap-2 p-0">
               @for (o of owners(); track $index) {
                 <li class="text-[13px]">
                   @if (o.client) {
                     <a [routerLink]="['/kliyenty', o.client.id]" class="row-link">{{ o.client.name }}</a>
                   } @else {
-                    <span class="text-ink-3">Видалений клієнт</span>
+                    <span class="text-ink-3">{{ L('Видалений клієнт', 'Deleted customer') }}</span>
                   }
-                  <span class="block text-xs text-ink-3">{{ date(o.from) }} — {{ o.to ? date(o.to) : 'тепер' }}</span>
+                  <span class="block text-xs text-ink-3">{{ date(o.from) }} — {{ o.to ? date(o.to) : L('тепер', 'now') }}</span>
                 </li>
               }
             </ol>
@@ -245,6 +247,7 @@ export class TransferDialog {
   `,
 })
 export class CarPage {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly db = inject(DbService);
   protected readonly quick = inject(QuickActions);
@@ -309,7 +312,7 @@ export class CarPage {
     yAxis: {
       type: 'value',
       scale: true,
-      axisLabel: { color: pal.text3, formatter: (v: number) => `${Math.round(v / 1000)} тис` },
+      axisLabel: { color: pal.text3, formatter: (v: number) => `${Math.round(v / 1000)}${L(' тис', 'k')}` },
       splitLine: { lineStyle: { color: pal.line, type: 'dashed' } },
     },
     tooltip: { ...(baseOption(pal)['tooltip'] as object), trigger: 'axis', valueFormatter: (v: number) => fmtKm(v) },
@@ -341,36 +344,36 @@ export class CarPage {
   }
   protected workNames(o: { works: { name: string; decision: string | null }[] }): string {
     const w = o.works.filter((x) => x.decision !== 'declined').map((x) => x.name);
-    return w.length ? (w.length > 3 ? `${w.slice(0, 3).join(', ')} і ще ${w.length - 3}` : w.join(', ')) : 'Роботи ще не додано';
+    return w.length ? (w.length > 3 ? `${w.slice(0, 3).join(', ')} ${L('і ще', 'and')} ${w.length - 3}${L('', ' more')}` : w.join(', ')) : L('Роботи ще не додано', 'No jobs added yet');
   }
 
   protected async copyVin(vin: string): Promise<void> {
     try {
       await navigator.clipboard.writeText(vin);
-      this.toast.success('VIN скопійовано');
+      this.toast.success(L('VIN скопійовано', 'VIN copied'));
     } catch {
-      this.toast.error('Не вдалося скопіювати — виділіть VIN вручну');
+      this.toast.error(L('Не вдалося скопіювати — виділіть VIN вручну', 'Couldn’t copy — select the VIN manually'));
     }
   }
 
   protected viewPhoto(src: string): void {
-    this.dialogs.open(PhotoViewer, { photos: [src], index: 0 }, { size: 'xl', label: 'Фото пошкодження' });
+    this.dialogs.open(PhotoViewer, { photos: [src], index: 0 }, { size: 'xl', label: L('Фото пошкодження', 'Damage photo') });
   }
 
   protected edit(): void {
-    this.dialogs.open(CarForm, { id: this.id() }, { drawer: true, label: 'Редагувати авто' });
+    this.dialogs.open(CarForm, { id: this.id() }, { drawer: true, label: L('Редагувати авто', 'Edit car') });
   }
 
   protected transfer(): void {
     const car = this.car();
     if (!car) return;
-    const ref = this.dialogs.open<TransferDialog, Car, string>(TransferDialog, car, { size: 'sm', label: 'Змінити власника' });
+    const ref = this.dialogs.open<TransferDialog, Car, string>(TransferDialog, car, { size: 'sm', label: L('Змінити власника', 'Change owner') });
     ref.closed.subscribe(async (clientId) => {
       const to = this.db.clients.get(clientId);
       if (!to) return;
       try {
         await this.clientsSvc.transferCar(car, to);
-        this.toast.success(`Авто передано: ${to.name}`);
+        this.toast.success(L(`Авто передано: ${to.name}`, `Car transferred to ${to.name}`));
       } catch (e) {
         this.toast.error(e);
       }
@@ -382,14 +385,14 @@ export class CarPage {
     if (!car) return;
     const n = this.orders().length;
     const ok = await this.dialogs.confirm({
-      title: `Видалити ${formatPlate(car.plate)} ${car.make} ${car.model}?`,
-      text: n ? `Разом з авто буде видалено ${n} нарядів і їхні погодження.` : 'Нарядів по цьому авто немає.',
-      confirm: 'Видалити авто',
+      title: `${L('Видалити', 'Delete')} ${formatPlate(car.plate)} ${car.make} ${car.model}?`,
+      text: n ? L(`Разом з авто буде видалено ${n} нарядів і їхні погодження.`, `This also deletes ${n} work orders and their approvals.`) : L('Нарядів по цьому авто немає.', 'This car has no work orders.'),
+      confirm: L('Видалити авто', 'Delete car'),
       danger: true,
     });
     if (!ok) return;
     const restore = await this.clientsSvc.deleteCar(car);
     await this.router.navigate(['/kliyenty', car.clientId]);
-    this.toast.undo('Авто видалено', restore);
+    this.toast.undo(L('Авто видалено', 'Car deleted'), restore);
   }
 }

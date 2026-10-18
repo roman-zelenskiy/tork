@@ -1,4 +1,5 @@
 import { Order, OrderPart, OrderStatus, OrderWork } from '../data/models';
+import { L } from '../i18n';
 
 /**
  * Розрахунки наряду. Рядки, від яких клієнт відмовився при погодженні, не входять у суму.
@@ -22,17 +23,30 @@ export function orderTotals(o: Pick<Order, 'works' | 'parts' | 'discountPct' | '
 /** Порядок статусів для канбану й таймлайну */
 export const STATUS_FLOW: OrderStatus[] = ['zapys', 'pryiom', 'diagnostyka', 'pogodzhennia', 'v_roboti', 'kontrol', 'gotovo', 'vydano'];
 
-export const STATUS_LABEL: Record<OrderStatus, string> = {
-  zapys: 'Запис',
-  pryiom: 'Прийом',
-  diagnostyka: 'Діагностика',
-  pogodzhennia: 'Погодження',
-  v_roboti: 'В роботі',
-  kontrol: 'Контроль якості',
-  gotovo: 'Готово',
-  vydano: 'Видано',
-  skasovano: 'Скасовано',
-};
+export const STATUS_LABEL: Record<OrderStatus, string> = L(
+  {
+    zapys: 'Запис',
+    pryiom: 'Прийом',
+    diagnostyka: 'Діагностика',
+    pogodzhennia: 'Погодження',
+    v_roboti: 'В роботі',
+    kontrol: 'Контроль якості',
+    gotovo: 'Готово',
+    vydano: 'Видано',
+    skasovano: 'Скасовано',
+  },
+  {
+    zapys: 'Booked',
+    pryiom: 'Intake',
+    diagnostyka: 'Diagnostics',
+    pogodzhennia: 'Approval',
+    v_roboti: 'In progress',
+    kontrol: 'Quality check',
+    gotovo: 'Ready',
+    vydano: 'Handed over',
+    skasovano: 'Cancelled',
+  },
+);
 
 /** Відкриті наряди — ще не видані й не скасовані */
 export const isOpen = (s: OrderStatus) => s !== 'vydano' && s !== 'skasovano';
@@ -40,11 +54,11 @@ export const isOpen = (s: OrderStatus) => s !== 'vydano' && s !== 'skasovano';
 /** Дозволені переходи: вперед по потоку на будь-який наступний крок, назад — на один, скасування — до видачі */
 export function canMove(from: OrderStatus, to: OrderStatus): { ok: boolean; reason?: string } {
   if (from === to) return { ok: false };
-  if (from === 'vydano') return { ok: false, reason: 'Виданий наряд не змінюють. Створіть новий.' };
-  if (from === 'skasovano') return to === 'zapys' ? { ok: true } : { ok: false, reason: 'Скасований наряд можна лише відновити як запис' };
+  if (from === 'vydano') return { ok: false, reason: L('Виданий наряд не змінюють. Створіть новий.', 'A handed-over work order can’t be changed. Create a new one.') };
+  if (from === 'skasovano') return to === 'zapys' ? { ok: true } : { ok: false, reason: L('Скасований наряд можна лише відновити як запис', 'A cancelled work order can only be restored as a booking') };
   if (to === 'skasovano') return { ok: true };
   const a = STATUS_FLOW.indexOf(from);
   const b = STATUS_FLOW.indexOf(to);
-  if (b < a - 1) return { ok: false, reason: 'Назад можна лише на один крок' };
+  if (b < a - 1) return { ok: false, reason: L('Назад можна лише на один крок', 'You can only go back one step') };
   return { ok: true };
 }

@@ -37,19 +37,13 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # base href = шлях репозиторію (/tork/); сторінки з параметрами рендеряться в браузері
+      # дві мовні збірки (/tork/uk/, /tork/en/) + корінь із визначенням мови й 404 для глибоких посилань
       - name: Build static site
-        run: npx ng build --configuration pages --base-href "${{ steps.pages.outputs.base_path }}/"
-
-      # глибокі посилання (/tork/naryady/…) відкриває SPA-оболонка; Jekyll не потрібен
-      - name: SPA fallback
-        run: |
-          cp dist/tork/browser/index.csr.html dist/tork/browser/404.html
-          touch dist/tork/browser/.nojekyll
+        run: node scripts/build-pages.mjs "${{ steps.pages.outputs.base_path }}"
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/tork/browser
+          path: dist/pages
 
   deploy:
     needs: build

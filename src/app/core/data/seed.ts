@@ -13,7 +13,9 @@ import {
   Order,
   OrderPart,
   OrderStatus,
+  ORDER_PREFIX,
   OrderWork,
+  PURCHASE_PREFIX,
   Part,
   Post,
   Priority,
@@ -22,6 +24,8 @@ import {
   ReminderRule,
   SavedView,
   Settings,
+  TAG_DISCOUNT,
+  TAG_FLEET,
   StatusChange,
   StockMovement,
   Supplier,
@@ -32,6 +36,7 @@ import { orderTotals, STATUS_FLOW, STATUS_LABEL } from '../domain/order-math';
 import { PLATE_LETTERS } from './plates';
 import { VIN_DB, makeVin } from './vin';
 import { rng } from './util';
+import { BRAND, L, isEn } from '../i18n';
 
 type Db = { [K in EntityKey]: EntityMap[K][] };
 
@@ -44,14 +49,14 @@ const stamp = (d: Date) => ({ createdAt: iso(d), updatedAt: iso(d) });
 // ——— довідники, однакові для демо й чистої бази
 
 export const CATEGORIES: WorkCategory[] = [
-  { id: 'cat_to', name: 'ТО й мастила', rate: 900 },
-  { id: 'cat_engine', name: 'Двигун', rate: 1100 },
-  { id: 'cat_susp', name: 'Ходова частина', rate: 950 },
-  { id: 'cat_brakes', name: 'Гальма', rate: 950 },
-  { id: 'cat_elec', name: 'Електрика й діагностика', rate: 1200 },
-  { id: 'cat_ac', name: 'Кондиціонер', rate: 1000 },
-  { id: 'cat_tires', name: 'Шини й диски', rate: 700 },
-  { id: 'cat_body', name: 'Кузов і скло', rate: 1050 },
+  { id: 'cat_to', name: L('ТО й мастила', 'Service & oils'), rate: 900 },
+  { id: 'cat_engine', name: L('Двигун', 'Engine'), rate: 1100 },
+  { id: 'cat_susp', name: L('Ходова частина', 'Suspension'), rate: 950 },
+  { id: 'cat_brakes', name: L('Гальма', 'Brakes'), rate: 950 },
+  { id: 'cat_elec', name: L('Електрика й діагностика', 'Electrics & diagnostics'), rate: 1200 },
+  { id: 'cat_ac', name: L('Кондиціонер', 'Air conditioning'), rate: 1000 },
+  { id: 'cat_tires', name: L('Шини й диски', 'Tyres & wheels'), rate: 700 },
+  { id: 'cat_body', name: L('Кузов і скло', 'Body & glass'), rate: 1050 },
 ];
 
 const WORKS: [code: string, name: string, cat: string, hours: number][] = [
@@ -98,27 +103,85 @@ const WORKS: [code: string, name: string, cat: string, hours: number][] = [
   ['КЗ-03', 'Ремонт сколу лобового скла', 'cat_body', 0.7],
 ];
 
-const TEMPLATES: [name: string, channel: 'sms' | 'viber', text: string][] = [
+/** Роботи англійською — за кодом з українського довідника */
+const WORK_EN: Record<string, string> = {
+  'ТО-01': 'Engine oil and oil filter change',
+  'ТО-02': 'Air filter replacement',
+  'ТО-03': 'Cabin filter replacement',
+  'ТО-04': 'Fuel filter replacement',
+  'ТО-05': 'Spark plug replacement (4 pcs)',
+  'ТО-06': 'Automatic transmission fluid change (partial)',
+  'ТО-07': 'Brake fluid change',
+  'ТО-08': 'Coolant change',
+  'ТО-09': 'Full scheduled service to manufacturer spec',
+  'ДВ-01': 'Timing belt kit and water pump replacement',
+  'ДВ-02': 'Auxiliary drive belt replacement',
+  'ДВ-03': 'Thermostat replacement',
+  'ДВ-04': 'Glow plug replacement',
+  'ДВ-05': 'Throttle body cleaning',
+  'ДВ-06': 'Clutch kit replacement',
+  'ДВ-07': 'Valve cover gasket replacement',
+  'ХД-01': 'Suspension check',
+  'ХД-02': 'Front shock absorber replacement (pair)',
+  'ХД-03': 'Stabiliser link replacement (pair)',
+  'ХД-04': 'Front wheel hub replacement',
+  'ХД-05': 'Front control arm bush replacement',
+  'ХД-06': 'Wheel alignment',
+  'ГЛ-01': 'Front brake pad replacement',
+  'ГЛ-02': 'Rear brake pad replacement',
+  'ГЛ-03': 'Front brake disc and pad replacement',
+  'ГЛ-04': 'Brake caliper service',
+  'ЕЛ-01': 'Computer diagnostics',
+  'ЕЛ-02': 'Electrical and charging system check',
+  'ЕЛ-03': 'Battery replacement with adaptation',
+  'ЕЛ-04': 'Headlight bulb replacement',
+  'ЕЛ-05': 'Headlight alignment',
+  'КН-01': 'Air conditioning check',
+  'КН-02': 'Air conditioning regas',
+  'КН-03': 'Antibacterial air conditioning treatment',
+  'ШН-01': 'Seasonal tyre change (4 wheels)',
+  'ШН-02': 'Wheel balancing (4 pcs)',
+  'ШН-03': 'Puncture repair',
+  'ШН-04': 'Tyre storage (season)',
+  'КЗ-01': 'Wiper blade replacement',
+  'КЗ-02': 'Headlight polishing',
+  'КЗ-03': 'Windscreen chip repair',
+};
+
+/** Код роботи англійською: «ТО-01» → «SV-01». Усередині генератора лишаються українські коди */
+const CODE_EN: Record<string, string> = { ТО: 'SV', ДВ: 'EN', ХД: 'SU', ГЛ: 'BR', ЕЛ: 'EL', КН: 'AC', ШН: 'TY', КЗ: 'BG' };
+const codeOut = (code: string) => (isEn ? `${CODE_EN[code.slice(0, 2)] ?? code.slice(0, 2)}${code.slice(2)}` : code);
+
+const TEMPLATES: [name: string, channel: 'sms' | 'viber', text: string][] = L<[string, 'sms' | 'viber', string][]>(
+  [
   ['Нагадування про ТО', 'viber', '{ім’я}, вітаємо! Для {авто} ({номер}) настав час планового обслуговування: {робота}. Запишіться в {сервіс}: {посилання}'],
   ['Сезонна заміна шин', 'sms', '{ім’я}, наближається сезон заміни шин. Запишіться на шиномонтаж у {сервіс} — без черг: {посилання}'],
   ['Відкладені роботи', 'viber', '{ім’я}, під час останнього візиту ми рекомендували для {авто}: {робота}. Нагадуємо, щоб не відкладати безпеку. Запис: {посилання}'],
   ['Авто готове', 'sms', '{ім’я}, ваш {авто} ({номер}) готовий. Чекаємо на вас у {сервіс}.'],
   ['Погодження робіт', 'viber', '{ім’я}, ми завершили діагностику {авто}. Перегляньте рекомендації з фото й цінами та погодьте роботи: {посилання}'],
-];
+  ],
+  [
+    ['Service reminder', 'viber', 'Hi {name}! Your {car} ({plate}) is due for scheduled service: {work}. Book at {service}: {link}'],
+    ['Seasonal tyre change', 'sms', '{name}, tyre change season is coming. Book a tyre fitting at {service} with no queues: {link}'],
+    ['Deferred work', 'viber', '{name}, at your last visit we recommended for your {car}: {work}. A reminder so safety doesn’t wait. Book: {link}'],
+    ['Car ready', 'sms', '{name}, your {car} ({plate}) is ready. We look forward to seeing you at {service}.'],
+    ['Repair approval', 'viber', '{name}, we’ve finished diagnosing your {car}. See the recommendations with photos and prices and approve the work: {link}'],
+  ],
+);
 
 const RULES: [name: string, km: number | null, months: number | null, season: number[], code: string, template: number][] = [
-  ['Заміна оливи', 10000, 12, [], 'ТО-01', 0],
-  ['Заміна ременя ГРМ', 60000, 48, [], 'ДВ-01', 0],
-  ['Заміна гальмівної рідини', 40000, 24, [], 'ТО-07', 0],
-  ['Сезонна заміна шин', null, null, [3, 4, 10, 11], 'ШН-01', 1],
-  ['Обслуговування кондиціонера', null, 12, [4, 5], 'КН-02', 0],
+  [L('Заміна оливи', 'Oil change'), 10000, 12, [], 'ТО-01', 0],
+  [L('Заміна ременя ГРМ', 'Timing belt replacement'), 60000, 48, [], 'ДВ-01', 0],
+  [L('Заміна гальмівної рідини', 'Brake fluid change'), 40000, 24, [], 'ТО-07', 0],
+  [L('Сезонна заміна шин', 'Seasonal tyre change'), null, null, [3, 4, 10, 11], 'ШН-01', 1],
+  [L('Обслуговування кондиціонера', 'Air conditioning service'), null, 12, [4, 5], 'КН-02', 0],
 ];
 
 function settings(now: Date): Settings {
   return {
     id: 'settings',
     ...stamp(now),
-    serviceName: 'Торк',
+    serviceName: BRAND,
     phone: '+380 44 390 12 70',
     email: 'servis@tork.ua',
     site: 'tork.ua',
@@ -135,8 +198,8 @@ function catalog(now: Date) {
   const works: Work[] = WORKS.map(([code, name, categoryId, hours], i) => ({
     id: `wk_${i + 1}`,
     ...stamp(now),
-    code,
-    name,
+    code: codeOut(code),
+    name: L(name, WORK_EN[code]),
     categoryId,
     hours,
     makes: [],
@@ -149,7 +212,7 @@ function catalog(now: Date) {
     everyKm,
     everyMonths,
     seasonMonths,
-    workCode,
+    workCode: codeOut(workCode),
     templateId: templates[t].id,
     active: true,
   }));
@@ -158,21 +221,21 @@ function catalog(now: Date) {
 
 function branchesAndPosts(now: Date) {
   const branches: Branch[] = [
-    { id: 'br_pozniaky', ...stamp(now), name: 'Торк Позняки', address: 'Київ, вул. Здолбунівська, 7', phone: '+380 44 390 12 70', opensAt: '08:00', closesAt: '20:00', workDays: [1, 2, 3, 4, 5, 6] },
-    { id: 'br_vynohradar', ...stamp(now), name: 'Торк Виноградар', address: 'Київ, просп. Правди, 41', phone: '+380 44 390 12 71', opensAt: '09:00', closesAt: '19:00', workDays: [1, 2, 3, 4, 5, 6] },
+    { id: 'br_pozniaky', ...stamp(now), name: L('Торк Позняки', 'Tork Pozniaky'), address: L('Київ, вул. Здолбунівська, 7', 'Kyiv, 7 Zdolbunivska St'), phone: '+380 44 390 12 70', opensAt: '08:00', closesAt: '20:00', workDays: [1, 2, 3, 4, 5, 6] },
+    { id: 'br_vynohradar', ...stamp(now), name: L('Торк Виноградар', 'Tork Vynohradar'), address: L('Київ, просп. Правди, 41', 'Kyiv, 41 Pravdy Ave'), phone: '+380 44 390 12 71', opensAt: '09:00', closesAt: '19:00', workDays: [1, 2, 3, 4, 5, 6] },
   ];
   const p = (id: string, branchId: string, name: string, kind: Post['kind'], rate: number | null): Post => ({ id, ...stamp(now), branchId, name, kind, rate, active: true });
   const posts: Post[] = [
-    p('po_p1', 'br_pozniaky', 'Підйомник 1', 'lift', null),
-    p('po_p2', 'br_pozniaky', 'Підйомник 2', 'lift', null),
-    p('po_p3', 'br_pozniaky', 'Підйомник 3', 'lift', null),
-    p('po_pd', 'br_pozniaky', 'Діагностичний пост', 'diag', 1250),
-    p('po_pt', 'br_pozniaky', 'Шиномонтаж', 'tire', 650),
-    p('po_pe', 'br_pozniaky', 'Експрес-сервіс', 'express', null),
-    p('po_v1', 'br_vynohradar', 'Підйомник 1', 'lift', null),
-    p('po_v2', 'br_vynohradar', 'Підйомник 2', 'lift', null),
-    p('po_vd', 'br_vynohradar', 'Діагностика', 'diag', 1250),
-    p('po_vt', 'br_vynohradar', 'Шиномонтаж', 'tire', 650),
+    p('po_p1', 'br_pozniaky', L('Підйомник 1', 'Lift 1'), 'lift', null),
+    p('po_p2', 'br_pozniaky', L('Підйомник 2', 'Lift 2'), 'lift', null),
+    p('po_p3', 'br_pozniaky', L('Підйомник 3', 'Lift 3'), 'lift', null),
+    p('po_pd', 'br_pozniaky', L('Діагностичний пост', 'Diagnostic bay'), 'diag', 1250),
+    p('po_pt', 'br_pozniaky', L('Шиномонтаж', 'Tyre fitting'), 'tire', 650),
+    p('po_pe', 'br_pozniaky', L('Експрес-сервіс', 'Express service'), 'express', null),
+    p('po_v1', 'br_vynohradar', L('Підйомник 1', 'Lift 1'), 'lift', null),
+    p('po_v2', 'br_vynohradar', L('Підйомник 2', 'Lift 2'), 'lift', null),
+    p('po_vd', 'br_vynohradar', L('Діагностика', 'Diagnostics'), 'diag', 1250),
+    p('po_vt', 'br_vynohradar', L('Шиномонтаж', 'Tyre fitting'), 'tire', 650),
   ];
   return { branches, posts };
 }
@@ -193,29 +256,119 @@ export function buildEmpty(now: Date): Partial<Db> {
 
 // ——— демо-дані
 
-const FIRST_M = ['Олександр', 'Андрій', 'Сергій', 'Дмитро', 'Максим', 'Олег', 'Ігор', 'Віталій', 'Богдан', 'Тарас', 'Юрій', 'Роман', 'Василь', 'Артем', 'Назар', 'Євген', 'Михайло', 'Степан'];
-const FIRST_F = ['Олена', 'Ірина', 'Наталія', 'Тетяна', 'Оксана', 'Юлія', 'Марія', 'Анна', 'Світлана', 'Катерина', 'Вікторія', 'Людмила', 'Дарина', 'Софія'];
-const LAST = ['Коваленко', 'Бондаренко', 'Шевченко', 'Мельник', 'Кравченко', 'Ткаченко', 'Олійник', 'Лисенко', 'Марченко', 'Савченко', 'Руденко', 'Гончаренко', 'Мороз', 'Петренко', 'Кузьменко', 'Павленко', 'Литвиненко', 'Ковальчук', 'Сидоренко', 'Гребенюк', 'Остапчук', 'Захарченко', 'Дорошенко', 'Яковенко', 'Білоус', 'Гуменюк', 'Приходько', 'Вакуленко'];
-const COMPANIES = ['ТОВ «Південьтранс»', 'ТОВ «Агроресурс-Київ»', 'ФОП Гребенюк О. В.', 'ТОВ «Кур’єр Експрес»', 'ПП «Будмайстер»', 'ТОВ «Фарм-Логістик»'];
+const FIRST_M = L(
+  ['Олександр', 'Андрій', 'Сергій', 'Дмитро', 'Максим', 'Олег', 'Ігор', 'Віталій', 'Богдан', 'Тарас', 'Юрій', 'Роман', 'Василь', 'Артем', 'Назар', 'Євген', 'Михайло', 'Степан'],
+  ['Oleksandr', 'Andrii', 'Serhii', 'Dmytro', 'Maksym', 'Oleh', 'Ihor', 'Vitalii', 'Bohdan', 'Taras', 'Yurii', 'Roman', 'Vasyl', 'Artem', 'Nazar', 'Yevhen', 'Mykhailo', 'Stepan'],
+);
+const FIRST_F = L(
+  ['Олена', 'Ірина', 'Наталія', 'Тетяна', 'Оксана', 'Юлія', 'Марія', 'Анна', 'Світлана', 'Катерина', 'Вікторія', 'Людмила', 'Дарина', 'Софія'],
+  ['Olena', 'Iryna', 'Nataliia', 'Tetiana', 'Oksana', 'Yuliia', 'Mariia', 'Anna', 'Svitlana', 'Kateryna', 'Viktoriia', 'Liudmyla', 'Daryna', 'Sofiia'],
+);
+const LAST = L(
+  ['Коваленко', 'Бондаренко', 'Шевченко', 'Мельник', 'Кравченко', 'Ткаченко', 'Олійник', 'Лисенко', 'Марченко', 'Савченко', 'Руденко', 'Гончаренко', 'Мороз', 'Петренко', 'Кузьменко', 'Павленко', 'Литвиненко', 'Ковальчук', 'Сидоренко', 'Гребенюк', 'Остапчук', 'Захарченко', 'Дорошенко', 'Яковенко', 'Білоус', 'Гуменюк', 'Приходько', 'Вакуленко'],
+  ['Kovalenko', 'Bondarenko', 'Shevchenko', 'Melnyk', 'Kravchenko', 'Tkachenko', 'Oliinyk', 'Lysenko', 'Marchenko', 'Savchenko', 'Rudenko', 'Honcharenko', 'Moroz', 'Petrenko', 'Kuzmenko', 'Pavlenko', 'Lytvynenko', 'Kovalchuk', 'Sydorenko', 'Hrebeniuk', 'Ostapchuk', 'Zakharchenko', 'Doroshenko', 'Yakovenko', 'Bilous', 'Humeniuk', 'Prykhodko', 'Vakulenko'],
+);
+const COMPANIES = L(
+  ['ТОВ «Південьтранс»', 'ТОВ «Агроресурс-Київ»', 'ФОП Гребенюк О. В.', 'ТОВ «Кур’єр Експрес»', 'ПП «Будмайстер»', 'ТОВ «Фарм-Логістик»'],
+  ['Pivdentrans LLC', 'Ahroresurs-Kyiv LLC', 'Sole trader O. Hrebeniuk', 'Kurier Ekspres LLC', 'Budmaister PE', 'Farm-Lohistyk LLC'],
+);
 const PHONE_CODES = ['50', '63', '66', '67', '68', '73', '93', '95', '96', '97', '98', '99'];
-const COLORS = ['білий', 'чорний', 'сірий', 'сріблястий', 'синій', 'червоний', 'зелений', 'бежевий'];
+const COLORS = L(
+  ['білий', 'чорний', 'сірий', 'сріблястий', 'синій', 'червоний', 'зелений', 'бежевий'],
+  ['white', 'black', 'grey', 'silver', 'blue', 'red', 'green', 'beige'],
+);
 const REGIONS = ['АА', 'КА', 'АІ', 'КІ', 'ВС', 'АЕ', 'ВН', 'АХ', 'ВІ', 'АМ', 'ТТ'];
 
-const COMPLAINTS = [
-  'Стукіт спереду на нерівностях',
-  'Скрип гальм при зупинці',
-  'Горить Check Engine',
-  'Планове ТО, пробіг підійшов',
-  'Кондиціонер слабо холодить',
-  'Тягне вбік на швидкості',
-  'Вібрація керма на 100 км/год',
-  'Сезонна заміна шин',
-  'Важко запускається зранку',
-  'Плаває оберти на холостому ході',
-  'Підтікає олива під двигуном',
-  'Свистить ремінь при запуску',
-  'Не світить ліва фара',
-  'Перед поїздкою за кордон — повна перевірка',
+const COMPLAINTS = L(
+  [
+    'Стукіт спереду на нерівностях',
+    'Скрип гальм при зупинці',
+    'Горить Check Engine',
+    'Планове ТО, пробіг підійшов',
+    'Кондиціонер слабо холодить',
+    'Тягне вбік на швидкості',
+    'Вібрація керма на 100 км/год',
+    'Сезонна заміна шин',
+    'Важко запускається зранку',
+    'Плаває оберти на холостому ході',
+    'Підтікає олива під двигуном',
+    'Свистить ремінь при запуску',
+    'Не світить ліва фара',
+    'Перед поїздкою за кордон — повна перевірка',
+  ],
+  [
+    'Knocking from the front over bumps',
+    'Brakes squeak when stopping',
+    'Check Engine light is on',
+    'Scheduled service, mileage is due',
+    'Air conditioning isn’t cooling well',
+    'Pulls to one side at speed',
+    'Steering wheel vibrates at 100 km/h',
+    'Seasonal tyre change',
+    'Hard to start in the morning',
+    'Idle speed fluctuates',
+    'Oil leak under the engine',
+    'Belt squeals on start-up',
+    'Left headlight doesn’t work',
+    'Full check before a trip abroad',
+  ],
+);
+
+/** Назви запчастин англійською — у тому ж порядку, що й PARTS */
+const PART_EN = [
+  'Engine oil EDGE 5W-30 LL, 4 L',
+  'Engine oil Helix Ultra 5W-40, 4 L',
+  'Engine oil Mobil 1 ESP 5W-30, 4 L',
+  'Engine oil 8100 X-clean 5W-30, 5 L',
+  'Oil filter',
+  'Oil filter (cartridge)',
+  'Oil filter',
+  'Oil filter (genuine)',
+  'Oil filter (genuine)',
+  'Oil filter',
+  'Air filter',
+  'Air filter',
+  'Air filter',
+  'Cabin filter, activated carbon',
+  'Cabin filter',
+  'Fuel filter',
+  'Iridium spark plug',
+  'Double Platinum spark plug',
+  'ATF 320 transmission fluid, 1 L',
+  'DOT 4 brake fluid, 1 L',
+  'G12+ antifreeze concentrate, 1.5 L',
+  'Timing belt kit with water pump',
+  'Timing belt kit',
+  'Poly-V belt',
+  'Thermostat',
+  'Duraterm glow plug',
+  'Clutch kit',
+  'Front gas shock absorber',
+  'Front shock absorber',
+  'Front stabiliser link',
+  'Stabiliser link',
+  'Front wheel hub with bearing',
+  'Control arm bush',
+  'Front brake pads',
+  'Front brake pads',
+  'Front brake pads',
+  'Front brake pads',
+  'Rear brake pads',
+  'Front vented brake disc',
+  'Front brake disc',
+  'Battery Blue Dynamic E11, 74 Ah',
+  'Battery S4 005, 60 Ah',
+  'H7 Night Breaker Laser bulb',
+  'H4 X-tremeVision Pro150 bulb',
+  'PAG 46 compressor oil, 250 ml',
+  'R134a refrigerant, 1 kg',
+  'Air conditioning cleaner, 250 ml',
+  'TR414 tubeless valve',
+  'Adhesive balancing weights, 5 g × 100',
+  'Puncture repair plug patch',
+  'Aerotwin wiper blades, set',
+  'Throttle body cleaner, 400 ml',
+  'Valve cover gasket',
 ];
 
 /** Запчастини: бренд, назва, артикул, закупівля, роздріб, застосовність, одиниця, кросс-номери, коди робіт */
@@ -276,10 +429,10 @@ const PARTS: [brand: string, name: string, sku: string, cost: number, price: num
 ];
 
 const SUPPLIERS: [string, string, string, number, string][] = [
-  ['Автодеталь-Схід', '+380 44 228 40 15', 'order@avtodetal-skhid.ua', 1, 'Фільтри й ходова, доставка двічі на день'],
-  ['ПартсХаб', '+380 67 500 21 33', 'b2b@partshub.ua', 2, 'Оригінальні запчастини Toyota, Hyundai, Kia'],
-  ['Мастила Плюс', '+380 50 411 09 90', 'sales@mastyla.plus', 1, 'Оливи, технічні рідини, хімія'],
-  ['Елемент-Авто', '+380 44 593 77 10', 'zakaz@element-auto.ua', 3, 'Електрика, акумулятори, лампи'],
+  [L('Автодеталь-Схід', 'Avtodetal-Skhid'), '+380 44 228 40 15', 'order@avtodetal-skhid.ua', 1, L('Фільтри й ходова, доставка двічі на день', 'Filters and suspension, delivered twice a day')],
+  [L('ПартсХаб', 'PartsHub'), '+380 67 500 21 33', 'b2b@partshub.ua', 2, L('Оригінальні запчастини Toyota, Hyundai, Kia', 'Genuine Toyota, Hyundai and Kia parts')],
+  [L('Мастила Плюс', 'Mastyla Plus'), '+380 50 411 09 90', 'sales@mastyla.plus', 1, L('Оливи, технічні рідини, хімія', 'Oils, fluids and chemicals')],
+  [L('Елемент-Авто', 'Element-Avto'), '+380 44 593 77 10', 'zakaz@element-auto.ua', 3, L('Електрика, акумулятори, лампи', 'Electrics, batteries and bulbs')],
 ];
 
 export function buildDemo(now: Date): Db {
@@ -289,7 +442,8 @@ export function buildDemo(now: Date): Db {
   const s = settings(now);
   const { branches, posts } = branchesAndPosts(now);
   const { works, templates, rules } = catalog(now);
-  const workByCode = new Map(works.map((w) => [w.code, w]));
+  // ключ — український код: генератор нижче посилається на нього
+  const workByCode = new Map(works.map((w, i) => [WORKS[i][0], w]));
   const catRate = new Map(CATEGORIES.map((c) => [c.id, c.rate]));
 
   // ——— співробітники
@@ -298,20 +452,20 @@ export function buildDemo(now: Date): Db {
   });
   const ALL = CATEGORIES.map((c) => c.id);
   const employees: Employee[] = [
-    emp('em_marchenko', 'br_pozniaky', 'Олег Марченко', 'mechanic', '+380 67 210 44 18', ALL, 32, 8000),
-    emp('em_tkachenko', 'br_pozniaky', 'Віталій Ткаченко', 'mechanic', '+380 93 118 02 77', ['cat_to', 'cat_engine', 'cat_susp', 'cat_brakes'], 30, 8000),
-    emp('em_lysenko', 'br_pozniaky', 'Андрій Лисенко', 'mechanic', '+380 50 712 39 05', ['cat_susp', 'cat_brakes', 'cat_to'], 30, 7500),
-    emp('em_rudenko', 'br_pozniaky', 'Юрій Руденко', 'mechanic', '+380 97 344 81 62', ['cat_elec', 'cat_ac', 'cat_engine'], 35, 9000),
-    emp('em_moroz', 'br_pozniaky', 'Тарас Мороз', 'mechanic', '+380 66 905 13 48', ['cat_tires', 'cat_susp'], 28, 6500),
-    emp('em_kovalchuk', 'br_pozniaky', 'Назар Ковальчук', 'mechanic', '+380 63 470 22 91', ['cat_to', 'cat_body', 'cat_tires'], 28, 6500),
-    emp('em_savchenko', 'br_vynohradar', 'Сергій Савченко', 'mechanic', '+380 68 233 60 14', ALL, 32, 8000),
-    emp('em_petrenko', 'br_vynohradar', 'Ігор Петренко', 'mechanic', '+380 99 501 77 30', ['cat_to', 'cat_engine', 'cat_brakes'], 30, 7500),
-    emp('em_bilous', 'br_vynohradar', 'Артем Білоус', 'mechanic', '+380 95 120 48 63', ['cat_elec', 'cat_ac', 'cat_engine'], 34, 8500),
-    emp('em_honcharenko', 'br_vynohradar', 'Богдан Гончаренко', 'mechanic', '+380 73 388 15 02', ['cat_tires', 'cat_susp', 'cat_body'], 28, 6500),
-    emp('em_olena', 'br_pozniaky', 'Олена Кравченко', 'receptionist', '+380 67 450 30 11', [], 0, 18000),
-    emp('em_iryna', 'br_vynohradar', 'Ірина Павленко', 'receptionist', '+380 50 677 21 40', [], 0, 17000),
-    emp('em_stepan', 'br_pozniaky', 'Степан Яковенко', 'storekeeper', '+380 96 233 18 07', [], 0, 16000),
-    emp('em_manager', 'br_pozniaky', 'Дмитро Захарченко', 'manager', '+380 67 101 55 20', [], 0, 32000),
+    emp('em_marchenko', 'br_pozniaky', L('Олег Марченко', 'Oleh Marchenko'), 'mechanic', '+380 67 210 44 18', ALL, 32, 8000),
+    emp('em_tkachenko', 'br_pozniaky', L('Віталій Ткаченко', 'Vitalii Tkachenko'), 'mechanic', '+380 93 118 02 77', ['cat_to', 'cat_engine', 'cat_susp', 'cat_brakes'], 30, 8000),
+    emp('em_lysenko', 'br_pozniaky', L('Андрій Лисенко', 'Andrii Lysenko'), 'mechanic', '+380 50 712 39 05', ['cat_susp', 'cat_brakes', 'cat_to'], 30, 7500),
+    emp('em_rudenko', 'br_pozniaky', L('Юрій Руденко', 'Yurii Rudenko'), 'mechanic', '+380 97 344 81 62', ['cat_elec', 'cat_ac', 'cat_engine'], 35, 9000),
+    emp('em_moroz', 'br_pozniaky', L('Тарас Мороз', 'Taras Moroz'), 'mechanic', '+380 66 905 13 48', ['cat_tires', 'cat_susp'], 28, 6500),
+    emp('em_kovalchuk', 'br_pozniaky', L('Назар Ковальчук', 'Nazar Kovalchuk'), 'mechanic', '+380 63 470 22 91', ['cat_to', 'cat_body', 'cat_tires'], 28, 6500),
+    emp('em_savchenko', 'br_vynohradar', L('Сергій Савченко', 'Serhii Savchenko'), 'mechanic', '+380 68 233 60 14', ALL, 32, 8000),
+    emp('em_petrenko', 'br_vynohradar', L('Ігор Петренко', 'Ihor Petrenko'), 'mechanic', '+380 99 501 77 30', ['cat_to', 'cat_engine', 'cat_brakes'], 30, 7500),
+    emp('em_bilous', 'br_vynohradar', L('Артем Білоус', 'Artem Bilous'), 'mechanic', '+380 95 120 48 63', ['cat_elec', 'cat_ac', 'cat_engine'], 34, 8500),
+    emp('em_honcharenko', 'br_vynohradar', L('Богдан Гончаренко', 'Bohdan Honcharenko'), 'mechanic', '+380 73 388 15 02', ['cat_tires', 'cat_susp', 'cat_body'], 28, 6500),
+    emp('em_olena', 'br_pozniaky', L('Олена Кравченко', 'Olena Kravchenko'), 'receptionist', '+380 67 450 30 11', [], 0, 18000),
+    emp('em_iryna', 'br_vynohradar', L('Ірина Павленко', 'Iryna Pavlenko'), 'receptionist', '+380 50 677 21 40', [], 0, 17000),
+    emp('em_stepan', 'br_pozniaky', L('Степан Яковенко', 'Stepan Yakovenko'), 'storekeeper', '+380 96 233 18 07', [], 0, 16000),
+    emp('em_manager', 'br_pozniaky', L('Дмитро Захарченко', 'Dmytro Zakharchenko'), 'manager', '+380 67 101 55 20', [], 0, 32000),
   ];
   const postMechanic: Record<string, string> = {
     po_p1: 'em_marchenko', po_p2: 'em_tkachenko', po_p3: 'em_lysenko', po_pd: 'em_rudenko', po_pt: 'em_moroz', po_pe: 'em_kovalchuk',
@@ -321,7 +475,8 @@ export function buildDemo(now: Date): Db {
   // ——— постачальники й запчастини
   const suppliers: Supplier[] = SUPPLIERS.map(([name, phone, email, deliveryDays, notes], i) => ({ id: `sp_${i + 1}`, ...stamp(addDays(today, -300)), name, phone, email, deliveryDays, notes }));
   const supplierFor = (brand: string) => (['Toyota', 'Hyundai/Kia'].includes(brand) ? 'sp_2' : ['Castrol', 'Shell', 'Mobil', 'Motul', 'Febi', 'Liqui Moly', 'Errecom', '—'].includes(brand) ? 'sp_3' : ['Varta', 'Osram', 'Philips', 'Bosch'].includes(brand) && r.chance(0.5) ? 'sp_4' : 'sp_1');
-  const parts: Part[] = PARTS.map(([brand, name, sku, cost, price, fits, unit, cross], i) => {
+  const parts: Part[] = PARTS.map(([brand, ukName, sku, cost, price, fits, unit, cross], i) => {
+    const name = L(ukName, PART_EN[i]);
     const consumable = cost < 700;
     const min = consumable ? r.int(4, 10) : r.int(1, 3);
     return {
@@ -378,7 +533,7 @@ export function buildDemo(now: Date): Db {
       owners: [{ clientId, from: iso(since), to: null }],
     };
   };
-  const TAGS = ['постійний', 'знижка 5%', 'VIP', 'автопарк', 'таксі', 'рекомендував друзям'];
+  const TAGS = [L('постійний', 'regular'), TAG_DISCOUNT, 'VIP', TAG_FLEET, L('таксі', 'taxi'), L('рекомендував друзям', 'referred friends')];
   for (let i = 0; i < 170; i++) {
     const female = r.chance(0.38);
     const name = `${r.pick(female ? FIRST_F : FIRST_M)} ${r.pick(LAST)}`;
@@ -390,8 +545,8 @@ export function buildDemo(now: Date): Db {
       name,
       phone: phone(),
       email: r.chance(0.55) ? `${translit(name.split(' ')[0])}.${translit(name.split(' ')[1]).slice(0, 8)}@${r.pick(['gmail.com', 'ukr.net', 'i.ua', 'outlook.com'])}` : '',
-      tags: r.chance(0.35) ? [r.pick(TAGS.filter((t) => t !== 'автопарк'))] : [],
-      notes: r.chance(0.15) ? r.pick(['Просить дзвонити після 18:00', 'Віддає перевагу оригінальним запчастинам', 'Зберігає шини в нас', 'Авто дружини теж обслуговується в нас']) : '',
+      tags: r.chance(0.35) ? [r.pick(TAGS.filter((t) => t !== TAG_FLEET))] : [],
+      notes: r.chance(0.15) ? r.pick(L(['Просить дзвонити після 18:00', 'Віддає перевагу оригінальним запчастинам', 'Зберігає шини в нас', 'Авто дружини теж обслуговується в нас'], ['Prefers calls after 18:00', 'Prefers genuine parts', 'Stores tyres with us', 'Their spouse’s car is serviced here too'])) : '',
       allowMessages: r.chance(0.85),
     };
     clients.push(c);
@@ -400,7 +555,7 @@ export function buildDemo(now: Date): Db {
   }
   COMPANIES.forEach((name, i) => {
     const since = addDays(today, -r.int(200, 700));
-    const c: Client = { id: `cl_c${i + 1}`, ...stamp(since), kind: 'company', name, phone: phone(), email: `fleet${i + 1}@${['pivdentrans', 'agroresurs', 'grebeniuk', 'kurier', 'budmaister', 'pharmlog'][i]}.ua`, tags: ['автопарк'], notes: 'Оплата за рахунком, відстрочка 14 днів', allowMessages: true };
+    const c: Client = { id: `cl_c${i + 1}`, ...stamp(since), kind: 'company', name, phone: phone(), email: `fleet${i + 1}@${['pivdentrans', 'agroresurs', 'grebeniuk', 'kurier', 'budmaister', 'pharmlog'][i]}.ua`, tags: [TAG_FLEET], notes: L('Оплата за рахунком, відстрочка 14 днів', 'Pays by invoice, 14-day payment terms'), allowMessages: true };
     clients.push(c);
     for (let k = 0; k < r.int(3, 5); k++) cars.push(newCar(c.id, since));
   });
@@ -416,7 +571,7 @@ export function buildDemo(now: Date): Db {
   const carMileage = new Map(cars.map((c) => [c.id, c.mileage - r.int(9000, 16000)]));
   let number = 1000;
   const lastVisit = new Map<string, number>();
-  const receptionist = (b: string) => (b === 'br_pozniaky' ? 'Олена Кравченко' : 'Ірина Павленко');
+  const receptionist = (b: string) => (b === 'br_pozniaky' ? L('Олена Кравченко', 'Olena Kravchenko') : L('Ірина Павленко', 'Iryna Pavlenko'));
 
   const mkWork = (code: string, rate: number, mech: string | null, state: OrderWork['state'], extra: Partial<OrderWork> = {}): OrderWork => {
     const w = workByCode.get(code)!;
@@ -548,7 +703,10 @@ export function buildDemo(now: Date): Db {
             approvals.push({
               id: apId, ...stamp(at(day, cursor + 30)), token: token(r.next), orderId: `or_${number}`, status: answered ? 'answered' : 'sent',
               items: ow.filter((w) => w.needsApproval).map((w) => ({ lineId: w.id, kind: 'work' as const, title: w.name, description: recoText(w.name), priority: w.priority, price: Math.round(w.hours * w.rate), photos: [], decision: w.decision })),
-              message: `Вітаємо! Ми завершили діагностику ${car.make} ${car.model}. Перегляньте рекомендації та погодьте роботи.`,
+              message: L(
+                `Вітаємо! Ми завершили діагностику ${car.make} ${car.model}. Перегляньте рекомендації та погодьте роботи.`,
+                `Hello! We’ve finished diagnosing your ${car.make} ${car.model}. See the recommendations and approve the work.`,
+              ),
               sentAt: iso(at(day, cursor + 30)), answeredAt: answered ? iso(at(day, cursor + 30 + r.int(10, 50))) : null, clientComment: '',
             });
           }
@@ -565,13 +723,13 @@ export function buildDemo(now: Date): Db {
 
           const mileage = (carMileage.get(car.id) ?? car.mileage) + r.int(300, 2500);
           if (status !== 'zapys' && status !== 'skasovano') carMileage.set(car.id, mileage);
-          const discountPct = client.tags.includes('знижка 5%') ? 5 : client.kind === 'company' ? 3 : 0;
+          const discountPct = client.tags.includes(TAG_DISCOUNT) ? 5 : client.kind === 'company' ? 3 : 0;
           const order: Order = {
-            id: `or_${number}`, ...stamp(new Date(history[0].at)), number: `Н-${number}`, branchId: b.id, clientId: client.id, carId: car.id, status,
+            id: `or_${number}`, ...stamp(new Date(history[0].at)), number: `${ORDER_PREFIX}${number}`, branchId: b.id, clientId: client.id, carId: car.id, status,
             postId: post.id, start: iso(start), durationMin: duration, mechanicId: mech, complaint: r.pick(COMPLAINTS),
             mileage: passed('pryiom') ? mileage : null, works: ow, parts: op, discountPct, payments: [], history,
             intake: passed('pryiom') && d > -30 ? {
-              mileage, fuel: r.pick([15, 25, 40, 50, 65, 80]), damages: r.chance(0.3) ? [{ id: `dm_${number}`, zone: r.pick(['bumper_front', 'door_fl', 'fender_rr', 'bumper_rear'] as const), kind: r.pick(['scratch', 'dent', 'chip'] as const), comment: 'Зафіксовано при прийомі', photo: null }] : [],
+              mileage, fuel: r.pick([15, 25, 40, 50, 65, 80]), damages: r.chance(0.3) ? [{ id: `dm_${number}`, zone: r.pick(['bumper_front', 'door_fl', 'fender_rr', 'bumper_rear'] as const), kind: r.pick(['scratch', 'dent', 'chip'] as const), comment: L('Зафіксовано при прийомі', 'Recorded at intake'), photo: null }] : [],
               kit: { spare: r.chance(0.8), jack: r.chance(0.6), documents: true, keys: r.pick([1, 2]), rugs: r.chance(0.7), firstAid: r.chance(0.5) },
               complaints: '', signature: null, signedAt: iso(start), receivedBy: receptionist(b.id),
             } : null,
@@ -595,10 +753,10 @@ export function buildDemo(now: Date): Db {
           for (const p of op) {
             if (!p.partId) continue;
             const part = parts.find((x) => x.id === p.partId)!;
-            if (p.issued && d > -21) movements.push({ id: `mv_${movements.length + 1}`, ...stamp(start), partId: part.id, type: 'out', qty: p.qty, branchId: b.id, toBranchId: null, orderId: order.id, note: `Видано в наряд ${order.number}` });
+            if (p.issued && d > -21) movements.push({ id: `mv_${movements.length + 1}`, ...stamp(start), partId: part.id, type: 'out', qty: p.qty, branchId: b.id, toBranchId: null, orderId: order.id, note: L(`Видано в наряд ${order.number}`, `Issued to ${order.number}`) });
             if (p.reserved && !p.issued && status !== 'vydano' && status !== 'skasovano') {
               part.reserved[b.id] = (part.reserved[b.id] ?? 0) + p.qty;
-              movements.push({ id: `mv_${movements.length + 1}`, ...stamp(start), partId: part.id, type: 'reserve', qty: p.qty, branchId: b.id, toBranchId: null, orderId: order.id, note: `Резерв під наряд ${order.number}` });
+              movements.push({ id: `mv_${movements.length + 1}`, ...stamp(start), partId: part.id, type: 'reserve', qty: p.qty, branchId: b.id, toBranchId: null, orderId: order.id, note: L(`Резерв під наряд ${order.number}`, `Reserved for ${order.number}`) });
             }
           }
           cursor = end + r.pick([0, 0, 15, 15, 30]);
@@ -613,44 +771,44 @@ export function buildDemo(now: Date): Db {
 
   // початкові надходження на склад
   for (const p of parts) for (const b of branches) {
-    movements.unshift({ id: `mv_in_${p.id}_${b.id}`, ...stamp(addDays(today, -60)), partId: p.id, type: 'in', qty: p.stock[b.id] + 4, branchId: b.id, toBranchId: null, orderId: null, note: 'Надходження від постачальника' });
+    movements.unshift({ id: `mv_in_${p.id}_${b.id}`, ...stamp(addDays(today, -60)), partId: p.id, type: 'in', qty: p.stock[b.id] + 4, branchId: b.id, toBranchId: null, orderId: null, note: L('Надходження від постачальника', 'Received from supplier') });
   }
-  movements.push({ id: 'mv_tr_1', ...stamp(addDays(today, -6)), partId: parts[4].id, type: 'transfer', qty: 3, branchId: 'br_pozniaky', toBranchId: 'br_vynohradar', orderId: null, note: 'Переміщення між філіями' });
+  movements.push({ id: 'mv_tr_1', ...stamp(addDays(today, -6)), partId: parts[4].id, type: 'transfer', qty: 3, branchId: 'br_pozniaky', toBranchId: 'br_vynohradar', orderId: null, note: L('Переміщення між філіями', 'Transfer between branches') });
 
   // поточний пробіг авто = пробіг на останньому прийомі
   for (const c of cars) c.mileage = carMileage.get(c.id) ?? c.mileage;
 
   const purchases: PurchaseOrder[] = [
-    { id: 'pu_1', ...stamp(addDays(today, -21)), number: 'ЗАМ-0041', supplierId: 'sp_1', branchId: 'br_pozniaky', status: 'received', lines: [{ partId: parts[4].id, qty: 20, cost: parts[4].cost }, { partId: parts[33].id, qty: 6, cost: parts[33].cost }], auto: false },
-    { id: 'pu_2', ...stamp(addDays(today, -2)), number: 'ЗАМ-0042', supplierId: 'sp_3', branchId: 'br_vynohradar', status: 'sent', lines: [{ partId: parts[0].id, qty: 10, cost: parts[0].cost }, { partId: parts[19].id, qty: 12, cost: parts[19].cost }], auto: false },
+    { id: 'pu_1', ...stamp(addDays(today, -21)), number: `${PURCHASE_PREFIX}0041`, supplierId: 'sp_1', branchId: 'br_pozniaky', status: 'received', lines: [{ partId: parts[4].id, qty: 20, cost: parts[4].cost }, { partId: parts[33].id, qty: 6, cost: parts[33].cost }], auto: false },
+    { id: 'pu_2', ...stamp(addDays(today, -2)), number: `${PURCHASE_PREFIX}0042`, supplierId: 'sp_3', branchId: 'br_vynohradar', status: 'sent', lines: [{ partId: parts[0].id, qty: 10, cost: parts[0].cost }, { partId: parts[19].id, qty: 12, cost: parts[19].cost }], auto: false },
   ];
 
   const mailings: Mailing[] = [
     {
-      id: 'ml_1', ...stamp(addDays(today, -26)), templateId: 'tp_2', channel: 'sms', title: 'Сезонна заміна шин — осінь',
+      id: 'ml_1', ...stamp(addDays(today, -26)), templateId: 'tp_2', channel: 'sms', title: L('Сезонна заміна шин — осінь', 'Seasonal tyre change — autumn'),
       recipients: clients.filter((c) => c.allowMessages).slice(0, 34).map((c) => ({ clientId: c.id, carId: cars.find((x) => x.clientId === c.id)?.id ?? null, phone: c.phone, text: fill(templates[1].text, c.name.split(' ')[0], '', '', '', s.serviceName) })),
     },
     {
-      id: 'ml_2', ...stamp(addDays(today, -9)), templateId: 'tp_1', channel: 'viber', title: 'Нагадування про ТО',
-      recipients: clients.filter((c) => c.allowMessages).slice(20, 31).map((c) => ({ clientId: c.id, carId: cars.find((x) => x.clientId === c.id)?.id ?? null, phone: c.phone, text: fill(templates[0].text, c.name.split(' ')[0], 'авто', '', 'заміна оливи', s.serviceName) })),
+      id: 'ml_2', ...stamp(addDays(today, -9)), templateId: 'tp_1', channel: 'viber', title: L('Нагадування про ТО', 'Service reminder'),
+      recipients: clients.filter((c) => c.allowMessages).slice(20, 31).map((c) => ({ clientId: c.id, carId: cars.find((x) => x.clientId === c.id)?.id ?? null, phone: c.phone, text: fill(templates[0].text, c.name.split(' ')[0], L('авто', 'car'), '', L('заміна оливи', 'oil change'), s.serviceName) })),
     },
   ];
 
   const notifications: AppNotification[] = [
-    { id: 'nt_1', ...stamp(addDays(now, 0)), kind: 'stock', title: 'Низький залишок', text: '4 позиції на складі Позняків нижче мінімуму. Чернетку замовлення створено.', link: '/sklad/zakupivli', read: false },
-    { id: 'nt_2', ...stamp(new Date(now.getTime() - 50 * 60000)), kind: 'order', title: 'Авто готове до видачі', text: 'Кілька нарядів очікують клієнтів у статусі «Готово».', link: '/naryady/kanban', read: false },
-    { id: 'nt_3', ...stamp(addDays(today, -1)), kind: 'system', title: 'Демо-дані згенеровано', text: 'Усе зберігається в localStorage вашого браузера. Розділ «Дані» в налаштуваннях — експорт і скидання.', link: '/nalashtuvannia/dani', read: true },
+    { id: 'nt_1', ...stamp(addDays(now, 0)), kind: 'stock', title: L('Низький залишок', 'Low stock'), text: L('4 позиції на складі Позняків нижче мінімуму. Чернетку замовлення створено.', '4 items at the Pozniaky stockroom are below minimum. A purchase order draft has been created.'), link: '/sklad/zakupivli', read: false },
+    { id: 'nt_2', ...stamp(new Date(now.getTime() - 50 * 60000)), kind: 'order', title: L('Авто готове до видачі', 'Car ready for pickup'), text: L('Кілька нарядів очікують клієнтів у статусі «Готово».', 'Several work orders are waiting for customers in “Ready”.'), link: '/naryady/kanban', read: false },
+    { id: 'nt_3', ...stamp(addDays(today, -1)), kind: 'system', title: L('Демо-дані згенеровано', 'Demo data generated'), text: L('Усе зберігається в localStorage вашого браузера. Розділ «Дані» в налаштуваннях — експорт і скидання.', 'Everything is stored in your browser’s localStorage. Settings → Data lets you export or reset it.'), link: '/nalashtuvannia/dani', read: true },
   ];
 
   const activity: ActivityEntry[] = orders
     .filter((o) => o.updatedAt >= iso(addDays(today, -1)))
     .slice(-25)
     .reverse()
-    .map((o, i) => ({ id: `ac_seed_${i}`, createdAt: o.updatedAt, updatedAt: o.updatedAt, entity: 'orders' as const, entityId: o.id, action: 'status' as const, summary: `Наряд ${o.number}: статус «${STATUS_LABEL[o.history[o.history.length - 1].to]}»` }));
+    .map((o, i) => ({ id: `ac_seed_${i}`, createdAt: o.updatedAt, updatedAt: o.updatedAt, entity: 'orders' as const, entityId: o.id, action: 'status' as const, summary: L(`Наряд ${o.number}: статус «${STATUS_LABEL[o.history[o.history.length - 1].to]}»`, `Work order ${o.number}: status “${STATUS_LABEL[o.history[o.history.length - 1].to]}”`) }));
 
   const views: SavedView[] = [
-    { id: 'vw_1', ...stamp(now), table: 'clients', name: 'Автопарки', state: { sort: { key: 'spent', dir: 'desc' }, filters: { kind: ['company'] }, columns: [], query: '' } },
-    { id: 'vw_2', ...stamp(now), table: 'clients', name: 'З боргом', state: { sort: { key: 'debt', dir: 'desc' }, filters: { debt: ['yes'] }, columns: [], query: '' } },
+    { id: 'vw_1', ...stamp(now), table: 'clients', name: L('Автопарки', 'Fleets'), state: { sort: { key: 'spent', dir: 'desc' }, filters: { kind: ['company'] }, columns: [], query: '' } },
+    { id: 'vw_2', ...stamp(now), table: 'clients', name: L('З боргом', 'With debt'), state: { sort: { key: 'debt', dir: 'desc' }, filters: { debt: ['yes'] }, columns: [], query: '' } },
   ];
 
   return {
@@ -666,14 +824,15 @@ function token(rnd: () => number) {
   return Array.from({ length: 12 }, () => abc[Math.floor(rnd() * abc.length)]).join('');
 }
 
-function recoText(name: string): string {
-  if (name.includes('дисків')) return 'Знос дисків нижче допустимого, на поверхні борозни. Гальмівний шлях збільшено.';
-  if (name.includes('стабілізатора')) return 'Люфт стійок, стукіт на нерівностях. Не критично, але погіршує керованість.';
-  if (name.includes('гальмівної рідини')) return 'Рідина вологою понад 3 %, рекомендована заміна за регламентом.';
-  if (name.includes('ременя')) return 'На ремені тріщини, ресурс близько 5 000 км.';
-  if (name.includes('амортизатор')) return 'Підтікання й послаблення амортизаторів, авто розгойдується.';
-  if (name.includes('Сайлентблок') || name.includes('сайлентблок')) return 'Розриви гуми сайлентблоків, можливий знос шин.';
-  return 'Рекомендовано за результатами огляду.';
+function recoText(title: string): string {
+  const name = title.toLowerCase();
+  if (/дисків|disc/.test(name)) return L('Знос дисків нижче допустимого, на поверхні борозни. Гальмівний шлях збільшено.', 'Disc wear is below the limit, with grooves on the surface. Braking distance has increased.');
+  if (/стабілізатора|stabiliser/.test(name)) return L('Люфт стійок, стукіт на нерівностях. Не критично, але погіршує керованість.', 'The links have play and knock over bumps. Not critical, but it affects handling.');
+  if (/гальмівної рідини|brake fluid/.test(name)) return L('Рідина вологою понад 3 %, рекомендована заміна за регламентом.', 'The fluid holds over 3% moisture; a scheduled change is recommended.');
+  if (/ременя|drive belt/.test(name)) return L('На ремені тріщини, ресурс близько 5 000 км.', 'The belt is cracked, with about 5,000 km of life left.');
+  if (/амортизатор|shock absorber/.test(name)) return L('Підтікання й послаблення амортизаторів, авто розгойдується.', 'The shock absorbers are leaking and worn; the car sways.');
+  if (/сайлентблок|bush/.test(name)) return L('Розриви гуми сайлентблоків, можливий знос шин.', 'The bush rubber is torn, which can wear the tyres.');
+  return L('Рекомендовано за результатами огляду.', 'Recommended after inspection.');
 }
 
 const TR: Record<string, string> = { а: 'a', б: 'b', в: 'v', г: 'h', ґ: 'g', д: 'd', е: 'e', є: 'ie', ж: 'zh', з: 'z', и: 'y', і: 'i', ї: 'i', й: 'i', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'kh', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'shch', ь: '', ю: 'iu', я: 'ia', '’': '' };
@@ -682,11 +841,11 @@ const translit = (s: string) => [...s.toLowerCase()].map((c) => TR[c] ?? c).join
 /** Підставляє змінні шаблону повідомлення */
 export function fill(text: string, name: string, car: string, plate: string, work: string, service: string, link = 'tork.ua/zapys') {
   return text
-    .replaceAll('{ім’я}', name)
-    .replaceAll('{авто}', car)
-    .replaceAll('{номер}', plate)
-    .replaceAll('{робота}', work)
-    .replaceAll('{сервіс}', service)
-    .replaceAll('{посилання}', link)
-    .replaceAll('{дата}', '');
+    .replace(/\{(ім’я|name)\}/g, name)
+    .replace(/\{(авто|car)\}/g, car)
+    .replace(/\{(номер|plate)\}/g, plate)
+    .replace(/\{(робота|work)\}/g, work)
+    .replace(/\{(сервіс|service)\}/g, service)
+    .replace(/\{(посилання|link)\}/g, link)
+    .replace(/\{(дата|date)\}/g, '');
 }

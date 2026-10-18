@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { formatPlate } from '../../core/data/plates';
 import { initials } from '../format';
+import { L } from '../../core/i18n';
 
 /** Аватар з ініціалами; відтінок стабільний для імені */
 @Component({
@@ -36,9 +37,10 @@ export class Avatar {
   selector: 'tk-plate',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'inline-flex' },
-  template: `<span class="plate" [attr.aria-label]="'Номер ' + text()"><span>{{ text() }}</span></span>`,
+  template: `<span class="plate" [attr.aria-label]="L('Номер ', 'Number plate ') + text()"><span>{{ text() }}</span></span>`,
 })
 export class Plate {
+  protected readonly L = L;
   readonly value = input.required<string>();
   protected readonly text = computed(() => formatPlate(this.value()));
 }

@@ -12,6 +12,7 @@ import { RadioGroup } from '../../shared/ui/checkbox';
 import { Option } from '../../shared/ui/option';
 import { normPhone } from '../../shared/format';
 import { SettingsHeader } from './settings-header';
+import { L } from '../../core/i18n';
 
 /** Загальні налаштування сервісу: реквізити, валюта, крок табло, філія й тема за замовчуванням */
 @Component({
@@ -25,62 +26,63 @@ import { SettingsHeader } from './settings-header';
     } @else {
       <form class="flex max-w-3xl flex-col gap-5" novalidate (submit)="$event.preventDefault(); save()">
         <section class="card grid gap-4 p-5 sm:grid-cols-2" aria-labelledby="s-org">
-          <h2 id="s-org" class="m-0 text-[15px] font-semibold sm:col-span-2">Сервіс</h2>
-          <tk-field class="sm:col-span-2" forId="st-name" label="Назва (у повідомленнях і друкованих формах)" [required]="true" [error]="err('name')">
+          <h2 id="s-org" class="m-0 text-[15px] font-semibold sm:col-span-2">{{ L('Сервіс', 'Service') }}</h2>
+          <tk-field class="sm:col-span-2" forId="st-name" [label]="L('Назва (у повідомленнях і друкованих формах)', 'Name (in messages and printed forms)')" [required]="true" [error]="err('name')">
             <tk-text-field inputId="st-name" [(value)]="name" [maxLength]="40" [invalid]="!!err('name')" />
           </tk-field>
-          <tk-field forId="st-phone" label="Телефон" [error]="err('phone')">
+          <tk-field forId="st-phone" [label]="L('Телефон', 'Phone')" [error]="err('phone')">
             <tk-text-field inputId="st-phone" mask="phone" [(value)]="phone" [invalid]="!!err('phone')" />
           </tk-field>
           <tk-field forId="st-email" label="Email" [error]="err('email')">
             <tk-text-field inputId="st-email" type="email" [(value)]="email" [invalid]="!!err('email')" />
           </tk-field>
-          <tk-field forId="st-site" label="Сайт">
+          <tk-field forId="st-site" [label]="L('Сайт', 'Website')">
             <tk-text-field inputId="st-site" [(value)]="site" placeholder="tork.ua" />
           </tk-field>
-          <tk-field forId="st-cur" label="Валюта" hint="Гривня — єдина підтримувана валюта">
+          <tk-field forId="st-cur" [label]="L('Валюта', 'Currency')" [hint]="L('Гривня — єдина підтримувана валюта', 'The hryvnia is the only supported currency')">
             <tk-select inputId="st-cur" [options]="currencies" [value]="'UAH'" [disabled]="true" />
           </tk-field>
         </section>
 
         <section class="card grid gap-4 p-5 sm:grid-cols-2" aria-labelledby="s-work">
-          <h2 id="s-work" class="m-0 text-[15px] font-semibold sm:col-span-2">Робота</h2>
-          <tk-field forId="st-branch" label="Філія за замовчуванням">
+          <h2 id="s-work" class="m-0 text-[15px] font-semibold sm:col-span-2">{{ L('Робота', 'Operations') }}</h2>
+          <tk-field forId="st-branch" [label]="L('Філія за замовчуванням', 'Default branch')">
             <tk-select inputId="st-branch" [options]="branchOptions()" [(value)]="branchId" />
           </tk-field>
-          <tk-field forId="st-slot" label="Крок табло й запису">
+          <tk-field forId="st-slot" [label]="L('Крок табло й запису', 'Board and booking step')">
             <tk-select inputId="st-slot" [options]="slots" [(value)]="slotMin" />
           </tk-field>
           <p class="m-0 text-[13px] text-ink-2 sm:col-span-2">
-            Ставки нормо-години, пости й графік роботи — у <a routerLink="/dovidnyky/normo-hodyny" class="link">довідниках</a>.
+            {{ L('Ставки нормо-години, пости й графік роботи — у', 'Standard-hour rates, bays and opening hours are in') }} <a routerLink="/dovidnyky/normo-hodyny" class="link">{{ L('довідниках', 'Directories') }}</a>.
           </p>
         </section>
 
         <section class="card flex flex-col gap-3 p-5" aria-labelledby="s-ui">
-          <h2 id="s-ui" class="m-0 text-[15px] font-semibold">Інтерфейс</h2>
-          <tk-radio-group variant="segmented" ariaLabel="Тема" [options]="themes" [value]="theme.mode()" (changed)="theme.setMode($event)" />
-          <p class="m-0 text-xs text-ink-3">Тема зберігається одразу. Гарячі клавіші: <span class="kbd">{{ hk.label('mod+k') }}</span> пошук, <span class="kbd">N</span> новий наряд, <span class="kbd">?</span> усі клавіші.</p>
+          <h2 id="s-ui" class="m-0 text-[15px] font-semibold">{{ L('Інтерфейс', 'Interface') }}</h2>
+          <tk-radio-group variant="segmented" [ariaLabel]="L('Тема', 'Theme')" [options]="themes" [value]="theme.mode()" (changed)="theme.setMode($event)" />
+          <p class="m-0 text-xs text-ink-3">{{ L('Тема зберігається одразу. Гарячі клавіші:', 'The theme is saved instantly. Shortcuts:') }} <span class="kbd">{{ hk.label('mod+k') }}</span> {{ L('пошук', 'search') }}, <span class="kbd">N</span> {{ L('новий наряд', 'new work order') }}, <span class="kbd">?</span> {{ L('усі клавіші', 'all shortcuts') }}.</p>
         </section>
 
         <div class="sticky bottom-0 -mx-4 flex justify-end gap-2 border-t border-line bg-[color-mix(in_srgb,var(--bg)_92%,transparent)] px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-lg sm:border">
-          <button type="button" class="btn" [disabled]="!dirty()" (click)="reset()">Скасувати зміни</button>
-          <button type="submit" class="btn btn-primary" [disabled]="!dirty() || saving()" [attr.aria-busy]="saving()">Зберегти</button>
+          <button type="button" class="btn" [disabled]="!dirty()" (click)="reset()">{{ L('Скасувати зміни', 'Discard changes') }}</button>
+          <button type="submit" class="btn btn-primary" [disabled]="!dirty() || saving()" [attr.aria-busy]="saving()">{{ L('Зберегти', 'Save') }}</button>
         </div>
       </form>
     }
   `,
 })
 export class SettingsPage implements HasUnsaved {
+  protected readonly L = L;
   protected readonly db = inject(DbService);
   protected readonly theme = inject(ThemeService);
   protected readonly hk = inject(HotkeysService);
   private readonly toast = inject(ToastService);
-  protected readonly currencies: Option<string>[] = [{ value: 'UAH', label: 'Гривня, ₴' }];
-  protected readonly slots: Option<number>[] = [15, 30].map((v) => ({ value: v, label: `${v} хвилин` }));
+  protected readonly currencies: Option<string>[] = [{ value: 'UAH', label: L('Гривня, ₴', 'Hryvnia, UAH') }];
+  protected readonly slots: Option<number>[] = [15, 30].map((v) => ({ value: v, label: L(`${v} хвилин`, `${v} minutes`) }));
   protected readonly themes: Option<ThemeMode>[] = [
-    { value: 'light', label: 'Світла' },
-    { value: 'dark', label: 'Темна' },
-    { value: 'system', label: 'Як у системі' },
+    { value: 'light', label: L('Світла', 'Light') },
+    { value: 'dark', label: L('Темна', 'Dark') },
+    { value: 'system', label: L('Як у системі', 'Match system') },
   ];
   protected readonly branchOptions = computed<Option<string>[]>(() => this.db.branches.items().map((b) => ({ value: b.id, label: b.name })));
 
@@ -123,9 +125,9 @@ export class SettingsPage implements HasUnsaved {
 
   protected err(k: 'name' | 'phone' | 'email'): string | null {
     if (!this.tried()) return null;
-    if (k === 'name') return this.name().trim() ? null : 'Введіть назву';
-    if (k === 'phone') return this.phone() && !normPhone(this.phone()) ? 'Номер неповний' : null;
-    return this.email() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(this.email()) ? 'Перевірте email' : null;
+    if (k === 'name') return this.name().trim() ? null : L('Введіть назву', 'Enter a name');
+    if (k === 'phone') return this.phone() && !normPhone(this.phone()) ? L('Номер неповний', 'Incomplete number') : null;
+    return this.email() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(this.email()) ? L('Перевірте email', 'Check the email') : null;
   }
 
   protected reset(): void {
@@ -142,10 +144,10 @@ export class SettingsPage implements HasUnsaved {
       await this.db.settingsRepo.update(
         s.id,
         { serviceName: this.name().trim(), phone: this.phone(), email: this.email().trim(), site: this.site().trim(), branchId: this.branchId(), slotMin: this.slotMin() ?? 15 },
-        { log: 'Змінено налаштування' },
+        { log: L('Змінено налаштування', 'Settings changed') },
       );
       this.initial.set(this.snap());
-      this.toast.success('Налаштування збережено');
+      this.toast.success(L('Налаштування збережено', 'Settings saved'));
     } catch (e) {
       this.toast.error(e);
     } finally {

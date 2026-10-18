@@ -20,6 +20,7 @@ import { Tooltip } from '../../shared/ui/tooltip';
 import { fmtAgo, fmtDate, fmtKm, fmtMoney, fmtPhone, plural } from '../../shared/format';
 import { ClientForm } from './client-form';
 import { CarForm } from './car-form';
+import { L } from '../../core/i18n';
 
 @Component({
   selector: 'tk-client-page',
@@ -27,7 +28,7 @@ import { CarForm } from './car-form';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a routerLink="/kliyenty" class="mb-3 inline-flex items-center gap-1 rounded-md text-[13px] text-ink-2 hover:text-ink">
-      <svg [lucideIcon]="I.arrowLeft" [size]="14" aria-hidden="true"></svg>Клієнти
+      <svg [lucideIcon]="I.arrowLeft" [size]="14" aria-hidden="true"></svg>{{ L('Клієнти', 'Customers') }}
     </a>
 
     @if (!db.ready()) {
@@ -42,8 +43,8 @@ import { CarForm } from './car-form';
       </div>
       <div class="card mt-6 p-4"><tk-skeleton [rows]="5" /></div>
     } @else if (!client()) {
-      <tk-empty art="clients" title="Клієнта не знайдено" text="Можливо, його видалили в іншій вкладці.">
-        <a routerLink="/kliyenty" class="btn">До списку клієнтів</a>
+      <tk-empty art="clients" [title]="L('Клієнта не знайдено', 'Customer not found')" [text]="L('Можливо, його видалили в іншій вкладці.', 'It may have been deleted in another tab.')">
+        <a routerLink="/kliyenty" class="btn">{{ L('До списку клієнтів', 'Back to customers') }}</a>
       </tk-empty>
     } @else {
       @let c = client()!;
@@ -53,7 +54,7 @@ import { CarForm } from './car-form';
           <h1 class="m-0 flex flex-wrap items-center gap-2 text-[22px] leading-tight font-semibold">
             <span class="break-words">{{ c.name }}</span>
             @if (c.kind === 'company') {
-              <span class="badge badge-info">компанія</span>
+              <span class="badge badge-info">{{ L('компанія', 'company') }}</span>
             }
           </h1>
           <div class="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-ink-2">
@@ -67,9 +68,9 @@ import { CarForm } from './car-form';
             }
             <span class="inline-flex items-center gap-1.5">
               <svg [lucideIcon]="c.allowMessages ? I.check : I.ban" [size]="14" aria-hidden="true"></svg>
-              {{ c.allowMessages ? 'Погоджується на SMS/Viber' : 'Без розсилок' }}
+              {{ c.allowMessages ? L('Погоджується на SMS/Viber', 'Agrees to SMS/Viber') : L('Без розсилок', 'No mailings') }}
             </span>
-            <span>Клієнт з {{ date(c.createdAt) }}</span>
+            <span>{{ L('Клієнт з', 'Customer since') }} {{ date(c.createdAt) }}</span>
           </div>
           @if (c.tags.length) {
             <div class="mt-2 flex flex-wrap gap-1.5">
@@ -81,40 +82,40 @@ import { CarForm } from './car-form';
         </div>
         <div class="flex flex-wrap gap-2">
           <button type="button" class="btn btn-primary" (click)="quick.newOrder({ clientId: c.id })">
-            <svg [lucideIcon]="I.plus" aria-hidden="true"></svg>Новий наряд
+            <svg [lucideIcon]="I.plus" aria-hidden="true"></svg>{{ L('Новий наряд', 'New work order') }}
           </button>
-          <button type="button" class="btn" (click)="edit()"><svg [lucideIcon]="I.edit" aria-hidden="true"></svg>Редагувати</button>
-          <button type="button" class="btn btn-icon" [cdkMenuTriggerFor]="more" aria-label="Інші дії"><svg [lucideIcon]="I.more" aria-hidden="true"></svg></button>
+          <button type="button" class="btn" (click)="edit()"><svg [lucideIcon]="I.edit" aria-hidden="true"></svg>{{ L('Редагувати', 'Edit') }}</button>
+          <button type="button" class="btn btn-icon" [cdkMenuTriggerFor]="more" [attr.aria-label]="L('Інші дії', 'More actions')"><svg [lucideIcon]="I.more" aria-hidden="true"></svg></button>
           <ng-template #more>
             <div class="menu" cdkMenu>
-              <button type="button" class="menu-item" cdkMenuItem (cdkMenuItemTriggered)="addCar()"><svg [lucideIcon]="I.car" aria-hidden="true"></svg>Додати авто</button>
+              <button type="button" class="menu-item" cdkMenuItem (cdkMenuItemTriggered)="addCar()"><svg [lucideIcon]="I.car" aria-hidden="true"></svg>{{ L('Додати авто', 'Add car') }}</button>
               <div class="menu-sep"></div>
-              <button type="button" class="menu-item danger" cdkMenuItem (cdkMenuItemTriggered)="remove()"><svg [lucideIcon]="I.trash" aria-hidden="true"></svg>Видалити клієнта</button>
+              <button type="button" class="menu-item danger" cdkMenuItem (cdkMenuItemTriggered)="remove()"><svg [lucideIcon]="I.trash" aria-hidden="true"></svg>{{ L('Видалити клієнта', 'Delete customer') }}</button>
             </div>
           </ng-template>
         </div>
       </header>
 
-      <section class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Показники клієнта">
+      <section class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4" [attr.aria-label]="L('Показники клієнта', 'Customer metrics')">
         <div class="card p-4">
-          <div class="text-xs text-ink-2">Візити</div>
+          <div class="text-xs text-ink-2">{{ L('Візити', 'Visits') }}</div>
           <div class="mt-1 text-xl font-semibold num">{{ stats().visits }}</div>
-          <div class="text-xs text-ink-3">{{ stats().lastVisit ? 'останній ' + ago(stats().lastVisit!) : 'ще не було' }}</div>
+          <div class="text-xs text-ink-3">{{ stats().lastVisit ? L('останній ', 'last ') + ago(stats().lastVisit!) : L('ще не було', 'none yet') }}</div>
         </div>
         <div class="card p-4">
-          <div class="text-xs text-ink-2">Сума за весь час</div>
+          <div class="text-xs text-ink-2">{{ L('Сума за весь час', 'Lifetime total') }}</div>
           <div class="mt-1 text-xl font-semibold num">{{ money(stats().revenue) }}</div>
-          <div class="text-xs text-ink-3">виданих нарядів</div>
+          <div class="text-xs text-ink-3">{{ L('виданих нарядів', 'work orders handed over') }}</div>
         </div>
         <div class="card p-4">
-          <div class="text-xs text-ink-2">Середній чек</div>
+          <div class="text-xs text-ink-2">{{ L('Середній чек', 'Average ticket') }}</div>
           <div class="mt-1 text-xl font-semibold num">{{ stats().visits ? money(stats().revenue / stats().visits) : '—' }}</div>
-          <div class="text-xs text-ink-3">{{ stats().openOrders ? stats().openOrders + ' у роботі' : 'немає відкритих' }}</div>
+          <div class="text-xs text-ink-3">{{ stats().openOrders ? stats().openOrders + L(' у роботі', ' in progress') : L('немає відкритих', 'none open') }}</div>
         </div>
         <div class="card p-4" [style.border-color]="stats().debt > 0 ? 'var(--danger)' : null">
-          <div class="text-xs text-ink-2">Борг</div>
-          <div class="mt-1 text-xl font-semibold num" [class.text-danger]="stats().debt > 0">{{ stats().debt ? money(stats().debt) : 'Немає' }}</div>
-          <div class="text-xs text-ink-3">{{ debtOrders().length ? debtOrders().length + ' ' + plural(debtOrders().length, ['наряд', 'наряди', 'нарядів']) : 'усе сплачено' }}</div>
+          <div class="text-xs text-ink-2">{{ L('Борг', 'Debt') }}</div>
+          <div class="mt-1 text-xl font-semibold num" [class.text-danger]="stats().debt > 0">{{ stats().debt ? money(stats().debt) : L('Немає', 'None') }}</div>
+          <div class="text-xs text-ink-3">{{ debtOrders().length ? debtOrders().length + ' ' + plural(debtOrders().length, ['наряд', 'наряди', 'нарядів'], ['work order', 'work orders']) : L('усе сплачено', 'all paid') }}</div>
         </div>
       </section>
 
@@ -122,8 +123,8 @@ import { CarForm } from './car-form';
         <div class="flex min-w-0 flex-col gap-6">
           <section aria-labelledby="cars-h">
             <div class="mb-3 flex items-center gap-2">
-              <h2 id="cars-h" class="m-0 flex-1 text-[15px] font-semibold">Авто <span class="text-ink-3 num">{{ cars().length }}</span></h2>
-              <button type="button" class="btn btn-sm" (click)="addCar()"><svg [lucideIcon]="I.plus" aria-hidden="true"></svg>Додати авто</button>
+              <h2 id="cars-h" class="m-0 flex-1 text-[15px] font-semibold">{{ L('Авто', 'Cars') }} <span class="text-ink-3 num">{{ cars().length }}</span></h2>
+              <button type="button" class="btn btn-sm" (click)="addCar()"><svg [lucideIcon]="I.plus" aria-hidden="true"></svg>{{ L('Додати авто', 'Add car') }}</button>
             </div>
             @if (cars().length) {
               <div class="grid gap-3 sm:grid-cols-2">
@@ -146,19 +147,19 @@ import { CarForm } from './car-form';
                 }
               </div>
             } @else {
-              <div class="card"><tk-empty art="car" title="Авто ще не додано" text="Додайте авто за VIN — марка, модель і рік підставляться самі." [compact]="true">
-                <button type="button" class="btn btn-sm btn-primary" (click)="addCar()">Додати авто</button>
+              <div class="card"><tk-empty art="car" [title]="L('Авто ще не додано', 'No cars yet')" [text]="L('Додайте авто за VIN — марка, модель і рік підставляться самі.', 'Add a car by VIN — make, model and year fill in automatically.')" [compact]="true">
+                <button type="button" class="btn btn-sm btn-primary" (click)="addCar()">{{ L('Додати авто', 'Add car') }}</button>
               </tk-empty></div>
             }
           </section>
 
           <section aria-labelledby="visits-h">
-            <h2 id="visits-h" class="m-0 mb-3 text-[15px] font-semibold">Візити <span class="text-ink-3 num">{{ orders().length }}</span></h2>
+            <h2 id="visits-h" class="m-0 mb-3 text-[15px] font-semibold">{{ L('Візити', 'Visits') }} <span class="text-ink-3 num">{{ orders().length }}</span></h2>
             <div class="card overflow-hidden">
               @if (orders().length) {
                 <div class="overflow-x-auto">
                   <table class="tbl">
-                    <thead><tr><th>Наряд</th><th>Дата</th><th>Авто</th><th>Статус</th><th class="text-right">Сума</th><th class="text-right">Борг</th></tr></thead>
+                    <thead><tr><th>{{ L('Наряд', 'Work order') }}</th><th>{{ L('Дата', 'Date') }}</th><th>{{ L('Авто', 'Cars') }}</th><th>{{ L('Статус', 'Status') }}</th><th class="text-right">{{ L('Сума', 'Total') }}</th><th class="text-right">{{ L('Борг', 'Debt') }}</th></tr></thead>
                     <tbody>
                       @for (o of orders().slice(0, visitLimit()); track o.id) {
                         <tr>
@@ -174,10 +175,10 @@ import { CarForm } from './car-form';
                   </table>
                 </div>
                 @if (orders().length > visitLimit()) {
-                  <button type="button" class="btn btn-ghost btn-sm m-2" (click)="visitLimit.set(visitLimit() + 20)">Показати ще {{ orders().length - visitLimit() }}</button>
+                  <button type="button" class="btn btn-ghost btn-sm m-2" (click)="visitLimit.set(visitLimit() + 20)">{{ L('Показати ще', 'Show') }} {{ orders().length - visitLimit() }}{{ L('', ' more') }}</button>
                 }
               } @else {
-                <tk-empty art="orders" title="Візитів ще не було" text="Створіть перший наряд для цього клієнта." [compact]="true" />
+                <tk-empty art="orders" [title]="L('Візитів ще не було', 'No visits yet')" [text]="L('Створіть перший наряд для цього клієнта.', 'Create the first work order for this customer.')" [compact]="true" />
               }
             </div>
           </section>
@@ -185,35 +186,35 @@ import { CarForm } from './car-form';
 
         <aside class="flex min-w-0 flex-col gap-6">
           <section class="card p-4" aria-labelledby="notes-h">
-            <h2 id="notes-h" class="m-0 mb-2 text-[15px] font-semibold">Нотатки</h2>
-            <tk-text-field [multiline]="true" [rows]="4" [maxLength]="500" ariaLabel="Нотатки про клієнта" placeholder="Побажання, домовленості…" [value]="notes()" (valueChange)="notes.set($event)" />
+            <h2 id="notes-h" class="m-0 mb-2 text-[15px] font-semibold">{{ L('Нотатки', 'Notes') }}</h2>
+            <tk-text-field [multiline]="true" [rows]="4" [maxLength]="500" [ariaLabel]="L('Нотатки про клієнта', 'Customer notes')" [placeholder]="L('Побажання, домовленості…', 'Preferences, agreements…')" [value]="notes()" (valueChange)="notes.set($event)" />
             @if (notesDirty()) {
               <div class="animate-fade mt-2 flex justify-end gap-2">
-                <button type="button" class="btn btn-sm" (click)="notes.set(c.notes)">Скасувати</button>
-                <button type="button" class="btn btn-sm btn-primary" [disabled]="savingNotes()" (click)="saveNotes()">Зберегти</button>
+                <button type="button" class="btn btn-sm" (click)="notes.set(c.notes)">{{ L('Скасувати', 'Cancel') }}</button>
+                <button type="button" class="btn btn-sm btn-primary" [disabled]="savingNotes()" (click)="saveNotes()">{{ L('Зберегти', 'Save') }}</button>
               </div>
             }
           </section>
 
           <section class="card p-4" aria-labelledby="def-h">
-            <h2 id="def-h" class="m-0 mb-1 text-[15px] font-semibold">Відкладені роботи</h2>
-            <p class="m-0 mb-3 text-xs text-ink-3">Рекомендації, від яких клієнт відмовився при погодженні</p>
+            <h2 id="def-h" class="m-0 mb-1 text-[15px] font-semibold">{{ L('Відкладені роботи', 'Deferred work') }}</h2>
+            <p class="m-0 mb-3 text-xs text-ink-3">{{ L('Рекомендації, від яких клієнт відмовився при погодженні', 'Recommendations the customer declined during approval') }}</p>
             @for (r of deferred(); track r.id) {
               <div class="flex items-start gap-2 border-t border-line py-2 text-[13px] first-of-type:border-0">
                 <svg [lucideIcon]="I.clock" class="mt-0.5 flex-none text-ink-3" aria-hidden="true"></svg>
                 <div class="min-w-0 flex-1">
                   <div>{{ r.title }}</div>
-                  <div class="text-xs text-ink-3">{{ r.dueDate ? 'нагадати ' + date(r.dueDate) : '' }}</div>
+                  <div class="text-xs text-ink-3">{{ r.dueDate ? L('нагадати ', 'remind on ') + date(r.dueDate) : '' }}</div>
                 </div>
                 <span class="num text-ink-2">{{ money(r.amount) }}</span>
               </div>
             } @empty {
-              <p class="m-0 text-[13px] text-ink-3">Немає — клієнт погоджував усе.</p>
+              <p class="m-0 text-[13px] text-ink-3">{{ L('Немає — клієнт погоджував усе.', 'None — the customer approved everything.') }}</p>
             }
           </section>
 
           <section class="card p-4" aria-labelledby="act-h">
-            <h2 id="act-h" class="m-0 mb-3 text-[15px] font-semibold">Історія змін</h2>
+            <h2 id="act-h" class="m-0 mb-3 text-[15px] font-semibold">{{ L('Історія змін', 'Change history') }}</h2>
             <ol class="m-0 flex list-none flex-col gap-2.5 p-0">
               @for (a of activity(); track a.id) {
                 <li class="flex gap-2 text-[13px]">
@@ -221,7 +222,7 @@ import { CarForm } from './car-form';
                   <span class="min-w-0 flex-1">{{ a.summary }}<span class="block text-xs text-ink-3">{{ ago(a.createdAt) }}</span></span>
                 </li>
               } @empty {
-                <li class="text-[13px] text-ink-3">Змін ще не було</li>
+                <li class="text-[13px] text-ink-3">{{ L('Змін ще не було', 'No changes yet') }}</li>
               }
             </ol>
           </section>
@@ -231,6 +232,7 @@ import { CarForm } from './car-form';
   `,
 })
 export class ClientPage implements HasUnsaved {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly db = inject(DbService);
   protected readonly quick = inject(QuickActions);
@@ -293,19 +295,19 @@ export class ClientPage implements HasUnsaved {
   }
 
   protected edit(): void {
-    this.dialogs.open(ClientForm, { id: this.id() }, { drawer: true, label: 'Редагувати клієнта' });
+    this.dialogs.open(ClientForm, { id: this.id() }, { drawer: true, label: L('Редагувати клієнта', 'Edit customer') });
   }
 
   protected addCar(): void {
-    this.dialogs.open(CarForm, { clientId: this.id() }, { drawer: true, label: 'Нове авто' });
+    this.dialogs.open(CarForm, { clientId: this.id() }, { drawer: true, label: L('Нове авто', 'New car') });
   }
 
   protected async saveNotes(): Promise<void> {
     if (this.savingNotes()) return;
     this.savingNotes.set(true);
     try {
-      await this.db.clients.update(this.id(), { notes: this.notes().trim() }, { log: 'Оновлено нотатки клієнта' });
-      this.toast.success('Нотатки збережено');
+      await this.db.clients.update(this.id(), { notes: this.notes().trim() }, { log: L('Оновлено нотатки клієнта', 'Customer notes updated') });
+      this.toast.success(L('Нотатки збережено', 'Notes saved'));
     } catch (e) {
       this.toast.error(e);
     } finally {
@@ -317,15 +319,15 @@ export class ClientPage implements HasUnsaved {
     const c = this.client();
     if (!c) return;
     const ok = await this.dialogs.confirm({
-      title: `Видалити клієнта ${c.name}?`,
+      title: L(`Видалити клієнта ${c.name}?`, `Delete customer ${c.name}?`),
       text: this.clientsSvc.cascadeText(this.clientsSvc.cascadeInfo([c.id])),
-      confirm: 'Видалити',
+      confirm: L('Видалити', 'Delete'),
       danger: true,
     });
     if (!ok) return;
     const restore = await this.clientsSvc.deleteClients([c.id]);
     this.notes.set(c.notes);
     await this.router.navigate(['/kliyenty']);
-    this.toast.undo(`Клієнта ${c.name} видалено`, restore);
+    this.toast.undo(L(`Клієнта ${c.name} видалено`, `Customer ${c.name} deleted`), restore);
   }
 }

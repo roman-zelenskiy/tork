@@ -14,6 +14,7 @@ import { Icon } from './icon';
 import { I, IconNode } from '../icons';
 import { OptionList } from './option-list';
 import { DROPDOWN_POSITIONS, Option, filterOptions, navKey, nextId } from './option';
+import { L } from '../../core/i18n';
 
 /**
  * Власний select (без нативного <select>): кнопка-тригер + список у CDK Overlay.
@@ -65,7 +66,7 @@ import { DROPDOWN_POSITIONS, Option, filterOptions, navKey, nextId } from './opt
       <button
         type="button"
         class="absolute top-1/2 right-1.5 grid size-6 -translate-y-1/2 place-items-center rounded-md text-ink-3 hover:bg-subtle hover:text-ink"
-        aria-label="Очистити вибір"
+        [attr.aria-label]="L('Очистити вибір', 'Clear selection')"
         (click)="clear($event)"
       >
         <svg [lucideIcon]="I.x" [size]="14" aria-hidden="true"></svg>
@@ -98,8 +99,8 @@ import { DROPDOWN_POSITIONS, Option, filterOptions, navKey, nextId } from './opt
               [attr.aria-controls]="listId"
               aria-expanded="true"
               [attr.aria-activedescendant]="filtered().length ? listId + '-' + active() : null"
-              aria-label="Пошук у списку"
-              placeholder="Пошук…"
+              [attr.aria-label]="L('Пошук у списку', 'Search the list')"
+              [placeholder]="L('Пошук…', 'Search…')"
               autocomplete="off"
               [value]="query()"
               (input)="query.set(search.value); active.set(0)"
@@ -118,7 +119,7 @@ import { DROPDOWN_POSITIONS, Option, filterOptions, navKey, nextId } from './opt
         @if (multiple() && hasValue()) {
           <div class="menu-sep"></div>
           <button type="button" class="menu-item text-ink-2" (click)="clear($event)">
-            <svg [lucideIcon]="I.x" aria-hidden="true"></svg>Скинути вибір
+            <svg [lucideIcon]="I.x" aria-hidden="true"></svg>{{ L('Скинути вибір', 'Clear selection') }}
           </button>
         }
       </div>
@@ -126,6 +127,7 @@ import { DROPDOWN_POSITIONS, Option, filterOptions, navKey, nextId } from './opt
   `,
 })
 export class Select<T> {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly positions = DROPDOWN_POSITIONS;
   protected readonly listId = nextId('lb');
@@ -135,7 +137,7 @@ export class Select<T> {
   /** Для мультиселекту */
   readonly values = model<T[]>([]);
   readonly multiple = input(false);
-  readonly placeholder = input('Оберіть…');
+  readonly placeholder = input(L('Оберіть…', 'Choose…'));
   readonly searchable = input<boolean | null>(null);
   readonly clearable = input(false);
   readonly invalid = input(false);
@@ -146,7 +148,7 @@ export class Select<T> {
   readonly ariaLabel = input<string | null>(null);
   readonly describedBy = input<string | null>(null);
   /** Підпис мультиселекту, коли обрано кілька: «3 філії» */
-  readonly manyLabel = input<(n: number) => string>((n) => `Обрано: ${n}`);
+  readonly manyLabel = input<(n: number) => string>((n) => L(`Обрано: ${n}`, `Selected: ${n}`));
   readonly changed = output<T | T[] | null>();
 
   protected readonly open = signal(false);

@@ -4,6 +4,7 @@ import { Employee, Order, OrderWork } from '../data/models';
 import { nowIso } from '../data/util';
 import { OrdersService } from './orders.service';
 import { workPrice } from './order-math';
+import { L } from '../i18n';
 
 export interface MechStats {
   normHours: number;
@@ -59,25 +60,25 @@ export class MechanicsService {
 
   async start(o: Order, w: OrderWork, mechId: string): Promise<void> {
     const cur = this.running(mechId);
-    if (cur && cur.work.id !== w.id) await this.setWork(cur.order, cur.work.id, (x) => this.stop(x, 'paused'), `${cur.order.number}: пауза «${cur.work.name}»`);
+    if (cur && cur.work.id !== w.id) await this.setWork(cur.order, cur.work.id, (x) => this.stop(x, 'paused'), L(`${cur.order.number}: пауза «${cur.work.name}»`, `${cur.order.number}: paused “${cur.work.name}”`));
     const fresh = this.db.orders.get(o.id)!;
-    const next = await this.setWork(fresh, w.id, (x) => ({ ...x, state: 'in_progress', mechanicId: mechId, runningSince: nowIso() }), `${o.number}: почато «${w.name}»`);
+    const next = await this.setWork(fresh, w.id, (x) => ({ ...x, state: 'in_progress', mechanicId: mechId, runningSince: nowIso() }), L(`${o.number}: почато «${w.name}»`, `${o.number}: started “${w.name}”`));
     // наряд переходить у роботу, коли механік почав непогоджувальну роботу
-    const diag = /діагност/i.test(w.name);
+    const diag = /діагност|diagnos/i.test(w.name);
     if (next.status === 'pryiom') await this.orders.setStatus(next, diag ? 'diagnostyka' : 'v_roboti');
     else if ((next.status === 'diagnostyka' || next.status === 'pogodzhennia') && !diag) await this.orders.setStatus(next, 'v_roboti');
   }
 
   async pause(o: Order, w: OrderWork): Promise<void> {
-    await this.setWork(o, w.id, (x) => this.stop(x, 'paused'), `${o.number}: пауза «${w.name}»`);
+    await this.setWork(o, w.id, (x) => this.stop(x, 'paused'), L(`${o.number}: пауза «${w.name}»`, `${o.number}: paused “${w.name}”`));
   }
 
   async finish(o: Order, w: OrderWork): Promise<boolean> {
-    const next = await this.setWork(o, w.id, (x) => this.stop(x, 'done'), `${o.number}: виконано «${w.name}»`);
+    const next = await this.setWork(o, w.id, (x) => this.stop(x, 'done'), L(`${o.number}: виконано «${w.name}»`, `${o.number}: done “${w.name}”`));
     const left = next.works.filter((x) => x.decision !== 'declined' && !(x.needsApproval && x.decision === null) && x.state !== 'done');
     if (!left.length && next.status === 'v_roboti') {
       await this.orders.setStatus(next, 'kontrol');
-      await this.db.notify({ kind: 'order', title: `${next.number}: роботи виконано`, text: 'Наряд передано на контроль якості.', link: `/naryady/${next.id}` });
+      await this.db.notify({ kind: 'order', title: L(`${next.number}: роботи виконано`, `${next.number}: work done`), text: L('Наряд передано на контроль якості.', 'The work order has moved to quality check.'), link: `/naryady/${next.id}` });
       return true;
     }
     return false;

@@ -10,6 +10,7 @@ import { TextField } from '../../shared/ui/text-field';
 import { Select } from '../../shared/ui/select';
 import { Switch } from '../../shared/ui/checkbox';
 import { Option } from '../../shared/ui/option';
+import { L } from '../../core/i18n';
 
 /** Правило ТО: за пробігом, часом (що настане раніше) або сезоном */
 @Component({
@@ -19,46 +20,47 @@ import { Option } from '../../shared/ui/option';
   host: { class: 'flex h-full flex-col' },
   template: `
     <div class="dlg-head items-center!">
-      <h2 class="flex-1">{{ editId ? 'Правило ТО' : 'Нове правило ТО' }}</h2>
-      <button type="button" class="btn btn-ghost btn-icon" aria-label="Закрити" (click)="requestClose()"><svg [lucideIcon]="I.x" aria-hidden="true"></svg></button>
+      <h2 class="flex-1">{{ editId ? L('Правило ТО', 'Service rule') : L('Нове правило ТО', 'New service rule') }}</h2>
+      <button type="button" class="btn btn-ghost btn-icon" [attr.aria-label]="L('Закрити', 'Close')" (click)="requestClose()"><svg [lucideIcon]="I.x" aria-hidden="true"></svg></button>
     </div>
     <form class="flex min-h-0 flex-1 flex-col" novalidate (submit)="$event.preventDefault(); save()">
       <div class="dlg-body flex flex-col gap-4">
-        <tk-field forId="rf-name" label="Назва" [required]="true" [error]="err('name')">
-          <tk-text-field inputId="rf-name" [(value)]="name" placeholder="Заміна оливи" [maxLength]="50" [invalid]="!!err('name')" />
+        <tk-field forId="rf-name" [label]="L('Назва', 'Name')" [required]="true" [error]="err('name')">
+          <tk-text-field inputId="rf-name" [(value)]="name" [placeholder]="L('Заміна оливи', 'Oil change')" [maxLength]="50" [invalid]="!!err('name')" />
         </tk-field>
-        <tk-field forId="rf-work" label="Робота, за якою рахуємо останнє виконання" [required]="true" [error]="err('work')">
+        <tk-field forId="rf-work" [label]="L('Робота, за якою рахуємо останнє виконання', 'Job used to track the last service')" [required]="true" [error]="err('work')">
           <tk-select inputId="rf-work" [options]="workOptions()" [(value)]="workCode" [invalid]="!!err('work')" />
         </tk-field>
         <div class="grid grid-cols-2 gap-3">
-          <tk-field forId="rf-km" label="Кожні, км" [error]="err('cond')">
-            <tk-text-field inputId="rf-km" mask="money" suffix="км" [(value)]="km" />
+          <tk-field forId="rf-km" [label]="L('Кожні, км', 'Every, km')" [error]="err('cond')">
+            <tk-text-field inputId="rf-km" mask="money" [suffix]="L('км', 'km')" [(value)]="km" />
           </tk-field>
-          <tk-field forId="rf-mo" label="Або кожні, місяців">
-            <tk-text-field inputId="rf-mo" mask="money" suffix="міс." [(value)]="months" />
+          <tk-field forId="rf-mo" [label]="L('Або кожні, місяців', 'Or every, months')">
+            <tk-text-field inputId="rf-mo" mask="money" [suffix]="L('міс.', 'mo')" [(value)]="months" />
           </tk-field>
         </div>
-        <tk-field forId="rf-season" label="Сезон (місяці нагадування)" hint="Для шин і кондиціонера — замість пробігу й часу">
-          <tk-select inputId="rf-season" [multiple]="true" [options]="monthOptions" [(values)]="season" placeholder="Не сезонне" [manyLabel]="seasonLabel" />
+        <tk-field forId="rf-season" [label]="L('Сезон (місяці нагадування)', 'Season (reminder months)')" [hint]="L('Для шин і кондиціонера — замість пробігу й часу', 'For tyres and air conditioning — instead of mileage and time')">
+          <tk-select inputId="rf-season" [multiple]="true" [options]="monthOptions" [(values)]="season" [placeholder]="L('Не сезонне', 'Not seasonal')" [manyLabel]="seasonLabel" />
         </tk-field>
-        <tk-field forId="rf-tpl" label="Шаблон повідомлення">
-          <tk-select inputId="rf-tpl" [options]="tplOptions()" [(value)]="templateId" placeholder="Обирати при розсилці" [clearable]="true" />
+        <tk-field forId="rf-tpl" [label]="L('Шаблон повідомлення', 'Message template')">
+          <tk-select inputId="rf-tpl" [options]="tplOptions()" [(value)]="templateId" [placeholder]="L('Обирати при розсилці', 'Choose when mailing')" [clearable]="true" />
         </tk-field>
-        <tk-switch [(checked)]="active">Правило активне</tk-switch>
+        <tk-switch [(checked)]="active">{{ L('Правило активне', 'Rule is active') }}</tk-switch>
       </div>
       <div class="dlg-foot">
-        <button type="button" class="btn" (click)="requestClose()">Скасувати</button>
-        <button type="submit" class="btn btn-primary" [disabled]="saving()">Зберегти</button>
+        <button type="button" class="btn" (click)="requestClose()">{{ L('Скасувати', 'Cancel') }}</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">{{ L('Зберегти', 'Save') }}</button>
       </div>
     </form>
   `,
 })
 export class RuleForm extends FormDialog<boolean> {
+  protected readonly L = L;
   protected readonly I = I;
   private readonly db = inject(DbService);
   protected readonly editId = inject<{ id?: string }>(DIALOG_DATA)?.id ?? null;
   protected readonly monthOptions: Option<number>[] = MONTHS.map((m, i) => ({ value: i + 1, label: m }));
-  protected readonly seasonLabel = (n: number) => `${n} міс.`;
+  protected readonly seasonLabel = (n: number) => L(`${n} міс.`, `${n} months`);
   protected readonly workOptions = computed<Option<string>[]>(() => this.db.works.items().map((w) => ({ value: w.code, label: w.name, hint: w.code })));
   protected readonly tplOptions = computed<Option<string>[]>(() => this.db.templates.items().map((t) => ({ value: t.id, label: t.name })));
   protected readonly name = signal('');
@@ -88,9 +90,9 @@ export class RuleForm extends FormDialog<boolean> {
   }
   protected errors() {
     return {
-      name: this.name().trim() ? null : 'Введіть назву',
-      work: this.workCode() ? null : 'Оберіть роботу',
-      cond: !this.km() && !this.months() && !this.season().length ? 'Задайте пробіг, час або сезон' : null,
+      name: this.name().trim() ? null : L('Введіть назву', 'Enter a name'),
+      work: this.workCode() ? null : L('Оберіть роботу', 'Choose a job'),
+      cond: !this.km() && !this.months() && !this.season().length ? L('Задайте пробіг, час або сезон', 'Set a mileage, time or season') : null,
     };
   }
   protected save(): Promise<void> {
@@ -104,9 +106,9 @@ export class RuleForm extends FormDialog<boolean> {
         templateId: this.templateId(),
         active: this.active(),
       };
-      if (this.editId) await this.db.rules.update(this.editId, payload, { log: `Змінено правило «${payload.name}»` });
-      else await this.db.rules.create(payload, { log: `Нове правило «${payload.name}»` });
-      this.toast.success('Правило збережено');
+      if (this.editId) await this.db.rules.update(this.editId, payload, { log: L(`Змінено правило «${payload.name}»`, `Rule “${payload.name}” changed`) });
+      else await this.db.rules.create(payload, { log: L(`Нове правило «${payload.name}»`, `New rule “${payload.name}”`) });
+      this.toast.success(L('Правило збережено', 'Rule saved'));
       return true;
     });
   }

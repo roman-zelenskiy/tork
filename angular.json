@@ -68,7 +68,8 @@
               "entry": "src/server.ts"
             },
             "define": {
-              "STATIC_BUILD": "false"
+              "STATIC_BUILD": "false",
+              "LANG": "'uk'"
             }
           },
           "configurations": {
@@ -108,8 +109,31 @@
               "outputHashing": "all",
               "outputMode": "static",
               "define": {
-                "STATIC_BUILD": "true"
+                "STATIC_BUILD": "true",
+                "LANG": "'uk'"
               }
+            },
+            "en": {
+              "define": {
+                "STATIC_BUILD": "false",
+                "LANG": "'en'"
+              },
+              "index": {
+                "input": "src/index.en.html",
+                "output": "index.html"
+              },
+              "outputPath": "dist/tork-en"
+            },
+            "pages-en": {
+              "define": {
+                "STATIC_BUILD": "true",
+                "LANG": "'en'"
+              },
+              "index": {
+                "input": "src/index.en.html",
+                "output": "index.html"
+              },
+              "outputPath": "dist/tork-en"
             }
           },
           "defaultConfiguration": "production"
@@ -122,6 +146,9 @@
             },
             "development": {
               "buildTarget": "tork:build:development"
+            },
+            "en": {
+              "buildTarget": "tork:build:development,en"
             }
           },
           "defaultConfiguration": "development"

@@ -2,9 +2,13 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, injec
 import { Icon } from './icon';
 import { I } from '../icons';
 import { ymd } from '../format';
+import { L, locale } from '../../core/i18n';
 
-const MONTHS = ['Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень', 'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень'];
-const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
+const MONTHS = L(
+  ['Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень', 'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень'],
+  ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+);
+const WD = L(['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'], ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']);
 const parse = (s: string) => new Date(Number(s.slice(0, 4)), Number(s.slice(5, 7)) - 1, Number(s.slice(8, 10)));
 
 /**
@@ -18,11 +22,11 @@ const parse = (s: string) => new Date(Number(s.slice(0, 4)), Number(s.slice(5, 7
   template: `
     <div class="w-[260px] select-none">
       <div class="mb-2 flex items-center justify-between">
-        <button type="button" class="btn btn-ghost btn-icon btn-sm" aria-label="Попередній місяць" (click)="shift(-1)">
+        <button type="button" class="btn btn-ghost btn-icon btn-sm" [attr.aria-label]="L('Попередній місяць', 'Previous month')" (click)="shift(-1)">
           <svg [lucideIcon]="I.chevronLeft" aria-hidden="true"></svg>
         </button>
         <div class="text-[13px] font-semibold" aria-live="polite">{{ title() }}</div>
-        <button type="button" class="btn btn-ghost btn-icon btn-sm" aria-label="Наступний місяць" (click)="shift(1)">
+        <button type="button" class="btn btn-ghost btn-icon btn-sm" [attr.aria-label]="L('Наступний місяць', 'Next month')" (click)="shift(1)">
           <svg [lucideIcon]="I.chevronRight" aria-hidden="true"></svg>
         </button>
       </div>
@@ -63,6 +67,7 @@ const parse = (s: string) => new Date(Number(s.slice(0, 4)), Number(s.slice(5, 7
   `,
 })
 export class Calendar {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly wd = WD;
   readonly value = input<string | null>(null);
@@ -98,7 +103,7 @@ export class Calendar {
     const offset = (first.getDay() + 6) % 7;
     const start = new Date(first.getFullYear(), first.getMonth(), 1 - offset);
     const [rs, re] = this.effRange();
-    const fmt = new Intl.DateTimeFormat('uk-UA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const fmt = new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const rows = [];
     for (let w = 0; w < 6; w++) {
       const row = [];

@@ -29,19 +29,23 @@ import { StatusMove } from './status-move';
 import { PaymentDialog, PAY_LABEL } from './payment-dialog';
 import { ScheduleDialog } from './schedule-dialog';
 import { ApprovalPanel } from '../approvals/approval-panel';
+import { L } from '../../core/i18n';
 
 const NEXT: Partial<Record<OrderStatus, { to: OrderStatus; label: string }>> = {
-  zapys: { to: 'pryiom', label: 'Прийняти авто' },
-  pryiom: { to: 'diagnostyka', label: 'Почати діагностику' },
-  diagnostyka: { to: 'v_roboti', label: 'Передати в роботу' },
-  pogodzhennia: { to: 'v_roboti', label: 'Передати в роботу' },
-  v_roboti: { to: 'kontrol', label: 'На контроль якості' },
-  kontrol: { to: 'gotovo', label: 'Готово до видачі' },
-  gotovo: { to: 'vydano', label: 'Видати клієнту' },
-  skasovano: { to: 'zapys', label: 'Відновити як запис' },
+  zapys: { to: 'pryiom', label: L('Прийняти авто', 'Accept car') },
+  pryiom: { to: 'diagnostyka', label: L('Почати діагностику', 'Start diagnostics') },
+  diagnostyka: { to: 'v_roboti', label: L('Передати в роботу', 'Start work') },
+  pogodzhennia: { to: 'v_roboti', label: L('Передати в роботу', 'Start work') },
+  v_roboti: { to: 'kontrol', label: L('На контроль якості', 'To quality check') },
+  kontrol: { to: 'gotovo', label: L('Готово до видачі', 'Ready for pickup') },
+  gotovo: { to: 'vydano', label: L('Видати клієнту', 'Hand over to customer') },
+  skasovano: { to: 'zapys', label: L('Відновити як запис', 'Restore as booking') },
 };
 
-const STATE_LABEL: Record<WorkState, string> = { todo: 'Не почато', in_progress: 'Виконується', paused: 'Пауза', done: 'Виконано' };
+const STATE_LABEL: Record<WorkState, string> = L(
+  { todo: 'Не почато', in_progress: 'Виконується', paused: 'Пауза', done: 'Виконано' },
+  { todo: 'Not started', in_progress: 'In progress', paused: 'Paused', done: 'Done' },
+);
 
 @Component({
   selector: 'tk-order-page',
@@ -49,7 +53,7 @@ const STATE_LABEL: Record<WorkState, string> = { todo: 'Не почато', in_p
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a routerLink="/naryady" class="no-print mb-3 inline-flex items-center gap-1 rounded-md text-[13px] text-ink-2 hover:text-ink">
-      <svg [lucideIcon]="I.arrowLeft" [size]="14" aria-hidden="true"></svg>Наряди
+      <svg [lucideIcon]="I.arrowLeft" [size]="14" aria-hidden="true"></svg>{{ L('Наряди', 'Work orders') }}
     </a>
     @if (!db.ready()) {
       <div class="skeleton mb-3 h-7 w-72"></div>
@@ -59,8 +63,8 @@ const STATE_LABEL: Record<WorkState, string> = { todo: 'Не почато', in_p
         <div class="card p-4"><tk-skeleton [rows]="6" [cols]="2" /></div>
       </div>
     } @else if (!order()) {
-      <tk-empty art="orders" title="Наряд не знайдено" text="Можливо, його видалили в іншій вкладці.">
-        <a routerLink="/naryady" class="btn">До нарядів</a>
+      <tk-empty art="orders" [title]="L('Наряд не знайдено', 'Work order not found')" [text]="L('Можливо, його видалили в іншій вкладці.', 'It may have been deleted in another tab.')">
+        <a routerLink="/naryady" class="btn">{{ L('До нарядів', 'To work orders') }}</a>
       </tk-empty>
     } @else {
       @let o = order()!;
@@ -71,20 +75,20 @@ const STATE_LABEL: Record<WorkState, string> = { todo: 'Не почато', in_p
             <h1 class="m-0 text-[22px] leading-tight font-semibold mono">{{ o.number }}</h1>
             <tk-status [status]="o.status" />
             @if (approvalWaiting()) {
-              <span class="badge badge-accent"><svg [lucideIcon]="I.message" [size]="12" aria-hidden="true"></svg>чекає відповіді клієнта</span>
+              <span class="badge badge-accent"><svg [lucideIcon]="I.message" [size]="12" aria-hidden="true"></svg>{{ L('чекає відповіді клієнта', 'awaiting customer reply') }}</span>
             }
           </div>
           <p class="mt-1 mb-0 text-[13px] text-ink-2">
-            Створено {{ dt(o.createdAt) }}{{ o.closedAt ? ', видано ' + dt(o.closedAt) : '' }}
+            {{ L('Створено', 'Created') }} {{ dt(o.createdAt) }}{{ o.closedAt ? L(', видано ', ', handed over ') + dt(o.closedAt) : '' }}
           </p>
         </div>
         <div class="no-print flex flex-wrap gap-2">
           @if (next(); as n) {
             <button type="button" class="btn btn-primary" (click)="move(n.to)">{{ n.label }}<svg [lucideIcon]="I.arrowRight" aria-hidden="true"></svg></button>
           }
-          <button type="button" class="btn" [cdkMenuTriggerFor]="statusMenu"><svg [lucideIcon]="I.circleDot" aria-hidden="true"></svg>Статус</button>
-          <button type="button" class="btn" [cdkMenuTriggerFor]="printMenu"><svg [lucideIcon]="I.printer" aria-hidden="true"></svg>Друк</button>
-          <button type="button" class="btn btn-icon" [cdkMenuTriggerFor]="more" aria-label="Інші дії"><svg [lucideIcon]="I.more" aria-hidden="true"></svg></button>
+          <button type="button" class="btn" [cdkMenuTriggerFor]="statusMenu"><svg [lucideIcon]="I.circleDot" aria-hidden="true"></svg>{{ L('Статус', 'Status') }}</button>
+          <button type="button" class="btn" [cdkMenuTriggerFor]="printMenu"><svg [lucideIcon]="I.printer" aria-hidden="true"></svg>{{ L('Друк', 'Print') }}</button>
+          <button type="button" class="btn btn-icon" [cdkMenuTriggerFor]="more" [attr.aria-label]="L('Інші дії', 'More actions')"><svg [lucideIcon]="I.more" aria-hidden="true"></svg></button>
         </div>
         <ng-template #statusMenu>
           <div class="menu w-56" cdkMenu>
@@ -100,25 +104,25 @@ const STATE_LABEL: Record<WorkState, string> = { todo: 'Не почато', in_p
         </ng-template>
         <ng-template #printMenu>
           <div class="menu w-56" cdkMenu>
-            <a class="menu-item" cdkMenuItem [routerLink]="['/naryady', o.id, 'druk']" [queryParams]="{ forma: 'naryad' }"><svg [lucideIcon]="I.file" aria-hidden="true"></svg>Замовлення-наряд</a>
-            <a class="menu-item" cdkMenuItem [routerLink]="['/naryady', o.id, 'druk']" [queryParams]="{ forma: 'akt-pryiomu' }"><svg [lucideIcon]="I.clipboardCheck" aria-hidden="true"></svg>Акт прийому</a>
-            <a class="menu-item" cdkMenuItem [routerLink]="['/naryady', o.id, 'druk']" [queryParams]="{ forma: 'akt-robit' }"><svg [lucideIcon]="I.receipt" aria-hidden="true"></svg>Акт виконаних робіт</a>
+            <a class="menu-item" cdkMenuItem [routerLink]="['/naryady', o.id, 'druk']" [queryParams]="{ forma: 'naryad' }"><svg [lucideIcon]="I.file" aria-hidden="true"></svg>{{ L('Замовлення-наряд', 'Work order') }}</a>
+            <a class="menu-item" cdkMenuItem [routerLink]="['/naryady', o.id, 'druk']" [queryParams]="{ forma: 'akt-pryiomu' }"><svg [lucideIcon]="I.clipboardCheck" aria-hidden="true"></svg>{{ L('Акт прийому', 'Intake report') }}</a>
+            <a class="menu-item" cdkMenuItem [routerLink]="['/naryady', o.id, 'druk']" [queryParams]="{ forma: 'akt-robit' }"><svg [lucideIcon]="I.receipt" aria-hidden="true"></svg>{{ L('Акт виконаних робіт', 'Completion certificate') }}</a>
           </div>
         </ng-template>
         <ng-template #more>
           <div class="menu w-56" cdkMenu>
-            <button type="button" class="menu-item" cdkMenuItem (cdkMenuItemTriggered)="editSchedule()"><svg [lucideIcon]="I.calendarClock" aria-hidden="true"></svg>Змінити запис</button>
-            <a class="menu-item" cdkMenuItem [routerLink]="['/naryady', o.id, 'pryiom']"><svg [lucideIcon]="I.clipboardPen" aria-hidden="true"></svg>Акт прийому</a>
+            <button type="button" class="menu-item" cdkMenuItem (cdkMenuItemTriggered)="editSchedule()"><svg [lucideIcon]="I.calendarClock" aria-hidden="true"></svg>{{ L('Змінити запис', 'Change booking') }}</button>
+            <a class="menu-item" cdkMenuItem [routerLink]="['/naryady', o.id, 'pryiom']"><svg [lucideIcon]="I.clipboardPen" aria-hidden="true"></svg>{{ L('Акт прийому', 'Intake report') }}</a>
             <div class="menu-sep"></div>
-            <button type="button" class="menu-item danger" cdkMenuItem [cdkMenuItemDisabled]="!allowed('skasovano')" (cdkMenuItemTriggered)="move('skasovano')"><svg [lucideIcon]="I.ban" aria-hidden="true"></svg>Скасувати наряд</button>
-            <button type="button" class="menu-item danger" cdkMenuItem (cdkMenuItemTriggered)="remove()"><svg [lucideIcon]="I.trash" aria-hidden="true"></svg>Видалити наряд</button>
+            <button type="button" class="menu-item danger" cdkMenuItem [cdkMenuItemDisabled]="!allowed('skasovano')" (cdkMenuItemTriggered)="move('skasovano')"><svg [lucideIcon]="I.ban" aria-hidden="true"></svg>{{ L('Скасувати наряд', 'Cancel work order') }}</button>
+            <button type="button" class="menu-item danger" cdkMenuItem (cdkMenuItemTriggered)="remove()"><svg [lucideIcon]="I.trash" aria-hidden="true"></svg>{{ L('Видалити наряд', 'Delete work order') }}</button>
           </div>
         </ng-template>
       </header>
 
       <!-- прогрес статусів -->
       @if (o.status !== 'skasovano') {
-        <ol class="no-print mb-6 grid list-none grid-cols-8 gap-1 p-0" aria-label="Етапи наряду">
+        <ol class="no-print mb-6 grid list-none grid-cols-8 gap-1 p-0" [attr.aria-label]="L('Етапи наряду', 'Work order stages')">
           @for (s of flow; track s; let i = $index) {
             <li class="min-w-0" [attr.aria-current]="s === o.status ? 'step' : null">
               <div class="h-1.5 rounded-full transition-colors duration-200" [style.background]="i <= flowIndex() ? color(o.status) : 'var(--muted)'"></div>
@@ -133,12 +137,12 @@ const STATE_LABEL: Record<WorkState, string> = { todo: 'Не почато', in_p
           <!-- роботи -->
           <section class="card" aria-labelledby="w-h">
             <div class="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3">
-              <h2 id="w-h" class="m-0 flex-1 text-[15px] font-semibold">Роботи</h2>
+              <h2 id="w-h" class="m-0 flex-1 text-[15px] font-semibold">{{ L('Роботи', 'Jobs') }}</h2>
               <span class="text-[13px] text-ink-2 num">{{ hours(t.hours) }}, {{ money(t.works) }}</span>
             </div>
             <div class="overflow-x-auto">
               <table class="tbl">
-                <thead><tr><th>Робота</th><th>Механік</th><th class="text-right">Н/г</th><th class="text-right">Сума</th><th>Стан</th><th class="w-10"><span class="sr-only">Дії</span></th></tr></thead>
+                <thead><tr><th>{{ L('Робота', 'Job') }}</th><th>{{ L('Механік', 'Mechanic') }}</th><th class="text-right">{{ L('Н/г', 'Hrs') }}</th><th class="text-right">{{ L('Сума', 'Amount') }}</th><th>{{ L('Стан', 'State') }}</th><th class="w-10"><span class="sr-only">{{ L('Дії', 'Actions') }}</span></th></tr></thead>
                 <tbody>
                   @for (w of o.works; track w.id) {
                     <tr [class.bg-subtle]="w.decision === 'declined'">
@@ -146,18 +150,18 @@ const STATE_LABEL: Record<WorkState, string> = { todo: 'Не почато', in_p
                         <div class="min-w-[180px] text-[13px]" [class.line-through]="w.decision === 'declined'" [class.text-ink-2]="w.decision === 'declined'">{{ w.name }}</div>
                         @if (w.needsApproval) {
                           <span class="text-xs" [class]="w.decision === 'approved' ? 'text-success' : w.decision === 'declined' ? 'text-danger' : 'text-accent-ink'">
-                            {{ w.decision === 'approved' ? 'Погоджено клієнтом' : w.decision === 'declined' ? 'Клієнт відмовився' : 'Чекає погодження' }}
+                            {{ w.decision === 'approved' ? L('Погоджено клієнтом', 'Approved by customer') : w.decision === 'declined' ? L('Клієнт відмовився', 'Customer declined') : L('Чекає погодження', 'Awaiting approval') }}
                           </span>
                         }
                       </td>
-                      <td class="w-40"><tk-select class="w-40" size="sm" [options]="mechOptions()" [value]="w.mechanicId" placeholder="—" ariaLabel="Механік" (valueChange)="setWork(w, { mechanicId: $event })" /></td>
-                      <td class="w-[124px]"><tk-stepper class="w-[112px]" size="sm" [value]="w.hours" [min]="0.1" [max]="40" [step]="0.1" [decimals]="1" ariaLabel="Нормо-години" (changed)="setWork(w, { hours: $event })" /></td>
+                      <td class="w-40"><tk-select class="w-40" size="sm" [options]="mechOptions()" [value]="w.mechanicId" placeholder="—" [ariaLabel]="L('Механік', 'Mechanic')" (valueChange)="setWork(w, { mechanicId: $event })" /></td>
+                      <td class="w-[124px]"><tk-stepper class="w-[112px]" size="sm" [value]="w.hours" [min]="0.1" [max]="40" [step]="0.1" [decimals]="1" [ariaLabel]="L('Нормо-години', 'Standard hours')" (changed)="setWork(w, { hours: $event })" /></td>
                       <td class="text-right num"><span class="block font-medium">{{ money(wp(w)) }}</span><span class="block text-[11px] text-ink-3">× {{ money(w.rate) }}</span></td>
                       <td><span class="badge" [class]="stateClass(w.state)">{{ stateLabel(w.state) }}</span></td>
-                      <td><button type="button" class="btn btn-ghost btn-icon btn-sm" [attr.aria-label]="'Прибрати ' + w.name" (click)="removeLine('work', w)"><svg [lucideIcon]="I.trash" [size]="14" aria-hidden="true"></svg></button></td>
+                      <td><button type="button" class="btn btn-ghost btn-icon btn-sm" [attr.aria-label]="L('Прибрати ', 'Remove ') + w.name" (click)="removeLine('work', w)"><svg [lucideIcon]="I.trash" [size]="14" aria-hidden="true"></svg></button></td>
                     </tr>
                   } @empty {
-                    <tr><td colspan="6" class="py-6! text-center text-[13px] text-ink-3">Додайте роботи з довідника нормо-годин</td></tr>
+                    <tr><td colspan="6" class="py-6! text-center text-[13px] text-ink-3">{{ L('Додайте роботи з довідника нормо-годин', 'Add jobs from the standard hours directory') }}</td></tr>
                   }
                 </tbody>
               </table>
@@ -168,9 +172,9 @@ const STATE_LABEL: Record<WorkState, string> = { todo: 'Не почато', in_p
                 [resetOnPick]="true"
                 [icon]="I.plus"
                 size="sm"
-                ariaLabel="Додати роботу"
-                placeholder="Додати роботу: код або назва…"
-                createLabel="Своя робота"
+                [ariaLabel]="L('Додати роботу', 'Add job')"
+                [placeholder]="L('Додати роботу: код або назва…', 'Add job: code or name…')"
+                [createLabel]="L('Своя робота', 'Custom job')"
                 (selected)="addWork($event.value)"
                 (create)="addCustomWork($event)"
               />
@@ -180,12 +184,12 @@ const STATE_LABEL: Record<WorkState, string> = { todo: 'Не почато', in_p
           <!-- запчастини -->
           <section class="card" aria-labelledby="p-h">
             <div class="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3">
-              <h2 id="p-h" class="m-0 flex-1 text-[15px] font-semibold">Запчастини</h2>
+              <h2 id="p-h" class="m-0 flex-1 text-[15px] font-semibold">{{ L('Запчастини', 'Parts') }}</h2>
               <span class="text-[13px] text-ink-2 num">{{ money(t.parts) }}</span>
             </div>
             <div class="overflow-x-auto">
               <table class="tbl">
-                <thead><tr><th>Запчастина</th><th class="text-right">К-сть</th><th class="text-right">Ціна</th><th class="text-right">Сума</th><th>Склад</th><th class="w-10"><span class="sr-only">Дії</span></th></tr></thead>
+                <thead><tr><th>{{ L('Запчастина', 'Part') }}</th><th class="text-right">{{ L('К-сть', 'Qty') }}</th><th class="text-right">{{ L('Ціна', 'Price') }}</th><th class="text-right">{{ L('Сума', 'Amount') }}</th><th>{{ L('Склад', 'Stock') }}</th><th class="w-10"><span class="sr-only">{{ L('Дії', 'Actions') }}</span></th></tr></thead>
                 <tbody>
                   @for (p of o.parts; track p.id) {
                     <tr [class.bg-subtle]="p.decision === 'declined'">
@@ -193,50 +197,50 @@ const STATE_LABEL: Record<WorkState, string> = { todo: 'Не почато', in_p
                         <div class="min-w-[200px] text-[13px]" [class.line-through]="p.decision === 'declined'" [class.text-ink-2]="p.decision === 'declined'">{{ p.name }}</div>
                         <div class="text-xs text-ink-3 mono">{{ p.sku }}</div>
                       </td>
-                      <td class="w-[124px]"><tk-stepper class="w-[112px]" size="sm" [value]="p.qty" [min]="1" [max]="99" ariaLabel="Кількість" [disabled]="p.issued" (changed)="setPartQty(p, $event)" /></td>
+                      <td class="w-[124px]"><tk-stepper class="w-[112px]" size="sm" [value]="p.qty" [min]="1" [max]="99" [ariaLabel]="L('Кількість', 'Quantity')" [disabled]="p.issued" (changed)="setPartQty(p, $event)" /></td>
                       <td class="text-right num">{{ money(p.price) }}</td>
                       <td class="text-right font-medium num">{{ money(pp(p)) }}</td>
                       <td>
                         @if (p.issued) {
-                          <span class="badge badge-success">Видано</span>
+                          <span class="badge badge-success">{{ L('Видано', 'Issued') }}</span>
                         } @else if (p.reserved) {
-                          <span class="badge badge-info">Резерв</span>
+                          <span class="badge badge-info">{{ L('Резерв', 'Reserved') }}</span>
                         } @else if (o.status === 'zapys') {
-                          <span class="badge" tkTip="Запчастину буде зарезервовано, коли авто приймуть">Очікує</span>
+                          <span class="badge" [tkTip]="L('Запчастину буде зарезервовано, коли авто приймуть', 'The part will be reserved when the car is accepted')">{{ L('Очікує', 'Pending') }}</span>
                         } @else {
-                          <span class="badge badge-danger" [tkTip]="'Доступно: ' + avail(p)">Немає на складі</span>
+                          <span class="badge badge-danger" [tkTip]="L('Доступно: ', 'Available: ') + avail(p)">{{ L('Немає на складі', 'Out of stock') }}</span>
                         }
                       </td>
-                      <td><button type="button" class="btn btn-ghost btn-icon btn-sm" [attr.aria-label]="'Прибрати ' + p.name" (click)="removeLine('part', p)"><svg [lucideIcon]="I.trash" [size]="14" aria-hidden="true"></svg></button></td>
+                      <td><button type="button" class="btn btn-ghost btn-icon btn-sm" [attr.aria-label]="L('Прибрати ', 'Remove ') + p.name" (click)="removeLine('part', p)"><svg [lucideIcon]="I.trash" [size]="14" aria-hidden="true"></svg></button></td>
                     </tr>
                   } @empty {
-                    <tr><td colspan="6" class="py-6! text-center text-[13px] text-ink-3">Запчастин ще немає</td></tr>
+                    <tr><td colspan="6" class="py-6! text-center text-[13px] text-ink-3">{{ L('Запчастин ще немає', 'No parts yet') }}</td></tr>
                   }
                 </tbody>
               </table>
             </div>
             <div class="no-print p-3">
-              <tk-combobox [options]="partOptions()" [resetOnPick]="true" [icon]="I.plus" size="sm" ariaLabel="Додати запчастину" placeholder="Додати запчастину: артикул, бренд, назва…" (selected)="addPart($event.value)" />
+              <tk-combobox [options]="partOptions()" [resetOnPick]="true" [icon]="I.plus" size="sm" [ariaLabel]="L('Додати запчастину', 'Add part')" [placeholder]="L('Додати запчастину: артикул, бренд, назва…', 'Add part: SKU, brand, name…')" (selected)="addPart($event.value)" />
             </div>
           </section>
 
           <!-- підсумок -->
           <section class="card p-4" aria-labelledby="s-h">
-            <h2 id="s-h" class="m-0 mb-3 text-[15px] font-semibold">Оплата</h2>
+            <h2 id="s-h" class="m-0 mb-3 text-[15px] font-semibold">{{ L('Оплата', 'Payment') }}</h2>
             <div class="grid gap-6 md:grid-cols-2">
               <dl class="m-0 grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 text-[13px]">
-                <dt class="text-ink-2">Роботи</dt><dd class="m-0 text-right num">{{ money(t.works) }}</dd>
-                <dt class="text-ink-2">Запчастини</dt><dd class="m-0 text-right num">{{ money(t.parts) }}</dd>
-                <dt class="flex items-center gap-2 text-ink-2">Знижка
-                  <tk-stepper class="w-28" size="sm" [value]="o.discountPct" [min]="0" [max]="50" suffix="%" ariaLabel="Знижка, відсотків" (changed)="setDiscount($event)" />
+                <dt class="text-ink-2">{{ L('Роботи', 'Jobs') }}</dt><dd class="m-0 text-right num">{{ money(t.works) }}</dd>
+                <dt class="text-ink-2">{{ L('Запчастини', 'Parts') }}</dt><dd class="m-0 text-right num">{{ money(t.parts) }}</dd>
+                <dt class="flex items-center gap-2 text-ink-2">{{ L('Знижка', 'Discount') }}
+                  <tk-stepper class="w-28" size="sm" [value]="o.discountPct" [min]="0" [max]="50" suffix="%" [ariaLabel]="L('Знижка, відсотків', 'Discount, percent')" (changed)="setDiscount($event)" />
                 </dt>
                 <dd class="m-0 text-right num">{{ t.discount ? '−' + money(t.discount) : '—' }}</dd>
-                <dt class="border-t border-line pt-2 font-semibold">До сплати</dt><dd class="m-0 border-t border-line pt-2 text-right text-base font-semibold num">{{ money(t.total) }}</dd>
-                <dt class="text-ink-2">Сплачено</dt><dd class="m-0 text-right num">{{ money(t.paid) }}</dd>
-                <dt class="font-medium" [class.text-danger]="t.debt > 0">Залишок</dt><dd class="m-0 text-right font-semibold num" [class.text-danger]="t.debt > 0">{{ money(t.debt) }}</dd>
+                <dt class="border-t border-line pt-2 font-semibold">{{ L('До сплати', 'Total due') }}</dt><dd class="m-0 border-t border-line pt-2 text-right text-base font-semibold num">{{ money(t.total) }}</dd>
+                <dt class="text-ink-2">{{ L('Сплачено', 'Paid') }}</dt><dd class="m-0 text-right num">{{ money(t.paid) }}</dd>
+                <dt class="font-medium" [class.text-danger]="t.debt > 0">{{ L('Залишок', 'Balance') }}</dt><dd class="m-0 text-right font-semibold num" [class.text-danger]="t.debt > 0">{{ money(t.debt) }}</dd>
               </dl>
               <div>
-                <h3 class="m-0 mb-2 text-[13px] font-medium text-ink-2">Платежі</h3>
+                <h3 class="m-0 mb-2 text-[13px] font-medium text-ink-2">{{ L('Платежі', 'Payments') }}</h3>
                 @for (p of o.payments; track p.id) {
                   <div class="flex items-center gap-2 border-t border-line py-1.5 text-[13px] first:border-0">
                     <svg [lucideIcon]="p.method === 'cash' ? I.banknote : p.method === 'card' ? I.creditCard : I.building" class="text-ink-3" aria-hidden="true"></svg>
@@ -244,10 +248,10 @@ const STATE_LABEL: Record<WorkState, string> = { todo: 'Не почато', in_p
                     <span class="num">{{ money(p.amount) }}</span>
                   </div>
                 } @empty {
-                  <p class="m-0 text-[13px] text-ink-3">Оплат ще не було</p>
+                  <p class="m-0 text-[13px] text-ink-3">{{ L('Оплат ще не було', 'No payments yet') }}</p>
                 }
                 @if (t.debt > 0) {
-                  <button type="button" class="btn btn-primary no-print mt-3 w-full" (click)="pay()"><svg [lucideIcon]="I.wallet" aria-hidden="true"></svg>Прийняти оплату</button>
+                  <button type="button" class="btn btn-primary no-print mt-3 w-full" (click)="pay()"><svg [lucideIcon]="I.wallet" aria-hidden="true"></svg>{{ L('Прийняти оплату', 'Take payment') }}</button>
                 }
               </div>
             </div>
@@ -258,7 +262,7 @@ const STATE_LABEL: Record<WorkState, string> = { todo: 'Не почато', in_p
 
         <aside class="flex min-w-0 flex-col gap-5">
           <section class="card p-4" aria-labelledby="c-h">
-            <h2 id="c-h" class="sr-only">Клієнт і авто</h2>
+            <h2 id="c-h" class="sr-only">{{ L('Клієнт і авто', 'Customer and car') }}</h2>
             @if (client(); as c) {
               <a [routerLink]="['/kliyenty', c.id]" class="row-link text-[15px]">{{ c.name }}</a>
               <a [href]="'tel:' + c.phone" class="mt-0.5 block text-[13px] text-ink-2 num hover:text-ink">{{ phone(c.phone) }}</a>
@@ -273,56 +277,56 @@ const STATE_LABEL: Record<WorkState, string> = { todo: 'Не почато', in_p
               </a>
             }
             <div class="mt-3 grid grid-cols-2 gap-3 text-[13px]">
-              <div><div class="text-xs text-ink-3">Пробіг при прийомі</div><div class="num">{{ o.mileage ? km(o.mileage) : '—' }}</div></div>
-              <div><div class="text-xs text-ink-3">Знижка клієнта</div><div class="num">{{ o.discountPct }}%</div></div>
+              <div><div class="text-xs text-ink-3">{{ L('Пробіг при прийомі', 'Mileage at intake') }}</div><div class="num">{{ o.mileage ? km(o.mileage) : '—' }}</div></div>
+              <div><div class="text-xs text-ink-3">{{ L('Знижка клієнта', 'Customer discount') }}</div><div class="num">{{ o.discountPct }}%</div></div>
             </div>
           </section>
 
           <section class="card p-4" aria-labelledby="sch-h">
             <div class="mb-2 flex items-center">
-              <h2 id="sch-h" class="m-0 flex-1 text-[15px] font-semibold">Запис</h2>
-              <button type="button" class="btn btn-ghost btn-sm no-print" (click)="editSchedule()"><svg [lucideIcon]="I.edit" aria-hidden="true"></svg>Змінити</button>
+              <h2 id="sch-h" class="m-0 flex-1 text-[15px] font-semibold">{{ L('Запис', 'Booking') }}</h2>
+              <button type="button" class="btn btn-ghost btn-sm no-print" (click)="editSchedule()"><svg [lucideIcon]="I.edit" aria-hidden="true"></svg>{{ L('Змінити', 'Change') }}</button>
             </div>
             <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[13px]">
-              <dt class="text-ink-3">Пост</dt><dd class="m-0">{{ post()?.name ?? 'Не призначено' }}</dd>
-              <dt class="text-ink-3">Час</dt><dd class="m-0 num">{{ o.start ? dt(o.start) + '–' + time(endOf(o)) : '—' }}</dd>
-              <dt class="text-ink-3">Тривалість</dt><dd class="m-0">{{ dur(o.durationMin) }}</dd>
-              <dt class="text-ink-3">Механік</dt><dd class="m-0">{{ mechName() ?? 'Не призначено' }}</dd>
+              <dt class="text-ink-3">{{ L('Пост', 'Bay') }}</dt><dd class="m-0">{{ post()?.name ?? L('Не призначено', 'Not assigned') }}</dd>
+              <dt class="text-ink-3">{{ L('Час', 'Time') }}</dt><dd class="m-0 num">{{ o.start ? dt(o.start) + '–' + time(endOf(o)) : '—' }}</dd>
+              <dt class="text-ink-3">{{ L('Тривалість', 'Duration') }}</dt><dd class="m-0">{{ dur(o.durationMin) }}</dd>
+              <dt class="text-ink-3">{{ L('Механік', 'Mechanic') }}</dt><dd class="m-0">{{ mechName() ?? L('Не призначено', 'Not assigned') }}</dd>
             </dl>
           </section>
 
           <section class="card p-4" aria-labelledby="cm-h">
-            <h2 id="cm-h" class="m-0 mb-2 text-[15px] font-semibold">Скарга й нотатки</h2>
-            <tk-text-field [multiline]="true" [rows]="2" [maxLength]="300" ariaLabel="Скарга клієнта" placeholder="Що турбує клієнта" [value]="complaint()" (valueChange)="complaint.set($event)" />
-            <tk-text-field class="mt-2 block" [multiline]="true" [rows]="2" [maxLength]="500" ariaLabel="Внутрішні нотатки" placeholder="Внутрішні нотатки (клієнт не бачить)" [value]="notes()" (valueChange)="notes.set($event)" />
+            <h2 id="cm-h" class="m-0 mb-2 text-[15px] font-semibold">{{ L('Скарга й нотатки', 'Complaint and notes') }}</h2>
+            <tk-text-field [multiline]="true" [rows]="2" [maxLength]="300" [ariaLabel]="L('Скарга клієнта', 'Customer complaint')" [placeholder]="L('Що турбує клієнта', 'What’s bothering the customer')" [value]="complaint()" (valueChange)="complaint.set($event)" />
+            <tk-text-field class="mt-2 block" [multiline]="true" [rows]="2" [maxLength]="500" [ariaLabel]="L('Внутрішні нотатки', 'Internal notes')" [placeholder]="L('Внутрішні нотатки (клієнт не бачить)', 'Internal notes (hidden from the customer)')" [value]="notes()" (valueChange)="notes.set($event)" />
             @if (textDirty()) {
               <div class="animate-fade mt-2 flex justify-end gap-2">
-                <button type="button" class="btn btn-sm" (click)="resetText()">Скасувати</button>
-                <button type="button" class="btn btn-sm btn-primary" (click)="saveText()">Зберегти</button>
+                <button type="button" class="btn btn-sm" (click)="resetText()">{{ L('Скасувати', 'Cancel') }}</button>
+                <button type="button" class="btn btn-sm btn-primary" (click)="saveText()">{{ L('Зберегти', 'Save') }}</button>
               </div>
             }
           </section>
 
           <section class="card p-4" aria-labelledby="in-h">
             <div class="mb-2 flex items-center">
-              <h2 id="in-h" class="m-0 flex-1 text-[15px] font-semibold">Акт прийому</h2>
-              <a [routerLink]="['/naryady', o.id, 'pryiom']" class="btn btn-sm no-print">{{ o.intake ? 'Відкрити' : 'Заповнити' }}</a>
+              <h2 id="in-h" class="m-0 flex-1 text-[15px] font-semibold">{{ L('Акт прийому', 'Intake report') }}</h2>
+              <a [routerLink]="['/naryady', o.id, 'pryiom']" class="btn btn-sm no-print">{{ o.intake ? L('Відкрити', 'Open') : L('Заповнити', 'Fill in') }}</a>
             </div>
             @if (o.intake; as a) {
               <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[13px]">
-                <dt class="text-ink-3">Пробіг</dt><dd class="m-0 num">{{ km(a.mileage) }}</dd>
-                <dt class="text-ink-3">Пальне</dt><dd class="m-0 num">{{ a.fuel }}%</dd>
-                <dt class="text-ink-3">Пошкодження</dt>
-                <dd class="m-0">{{ a.damages.length ? damagesText(a.damages) : 'Немає' }}</dd>
-                <dt class="text-ink-3">Підпис</dt><dd class="m-0">{{ a.signature || a.signedAt ? 'Підписано ' + dt(a.signedAt!) : 'Не підписано' }}</dd>
+                <dt class="text-ink-3">{{ L('Пробіг', 'Mileage') }}</dt><dd class="m-0 num">{{ km(a.mileage) }}</dd>
+                <dt class="text-ink-3">{{ L('Пальне', 'Fuel') }}</dt><dd class="m-0 num">{{ a.fuel }}%</dd>
+                <dt class="text-ink-3">{{ L('Пошкодження', 'Damage') }}</dt>
+                <dd class="m-0">{{ a.damages.length ? damagesText(a.damages) : L('Немає', 'None') }}</dd>
+                <dt class="text-ink-3">{{ L('Підпис', 'Signature') }}</dt><dd class="m-0">{{ a.signature || a.signedAt ? L('Підписано ', 'Signed ') + dt(a.signedAt!) : L('Не підписано', 'Not signed') }}</dd>
               </dl>
             } @else {
-              <p class="m-0 text-[13px] text-ink-3">Зафіксуйте стан авто, пальне й комплектність до початку робіт.</p>
+              <p class="m-0 text-[13px] text-ink-3">{{ L('Зафіксуйте стан авто, пальне й комплектність до початку робіт.', 'Record the car’s condition, fuel and contents before work starts.') }}</p>
             }
           </section>
 
           <section class="card p-4" aria-labelledby="h-h">
-            <h2 id="h-h" class="m-0 mb-3 text-[15px] font-semibold">Історія</h2>
+            <h2 id="h-h" class="m-0 mb-3 text-[15px] font-semibold">{{ L('Історія', 'History') }}</h2>
             <ol class="m-0 flex list-none flex-col gap-2.5 p-0">
               @for (h of history(); track $index) {
                 <li class="flex gap-2.5 text-[13px]">
@@ -338,6 +342,7 @@ const STATE_LABEL: Record<WorkState, string> = { todo: 'Не почато', in_p
   `,
 })
 export class OrderPage implements HasUnsaved {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly db = inject(DbService);
   private readonly statsSvc = inject(StatsService);
@@ -379,7 +384,7 @@ export class OrderPage implements HasUnsaved {
   protected readonly next = computed(() => {
     const o = this.order();
     if (!o) return null;
-    if (o.status === 'diagnostyka' && o.works.some((w) => w.needsApproval && !w.decision)) return { to: 'pogodzhennia' as OrderStatus, label: 'На погодження' };
+    if (o.status === 'diagnostyka' && o.works.some((w) => w.needsApproval && !w.decision)) return { to: 'pogodzhennia' as OrderStatus, label: L('На погодження', 'Send for approval') };
     return NEXT[o.status] ?? null;
   });
 
@@ -412,9 +417,9 @@ export class OrderPage implements HasUnsaved {
       .map(({ p, fits, avail }) => ({
         value: p.id,
         label: `${p.brand} ${p.name}`,
-        hint: `${p.sku} · ${avail > 0 ? `є ${avail}` : 'немає'} · ${fmtMoney(p.price)}`,
+        hint: `${p.sku} · ${avail > 0 ? L(`є ${avail}`, `${avail} in stock`) : L('немає', 'none')} · ${fmtMoney(p.price)}`,
         keywords: `${p.sku} ${p.crossNumbers.join(' ')}`,
-        group: fits ? (car ? `Підходить для ${car.make} ${car.model}` : 'Універсальні') : 'Інші',
+        group: fits ? (car ? L(`Підходить для ${car.make} ${car.model}`, `Fits ${car.make} ${car.model}`) : L('Універсальні', 'Universal')) : L('Інші', 'Other'),
       }));
   });
 
@@ -428,14 +433,14 @@ export class OrderPage implements HasUnsaved {
     if (!o) return [];
     const items = o.history.map((h) => ({
       at: h.at,
-      text: h.from ? `${STATUS_LABEL[h.from]} → ${STATUS_LABEL[h.to]}` : `Створено: ${STATUS_LABEL[h.to]}`,
+      text: h.from ? `${STATUS_LABEL[h.from]} → ${STATUS_LABEL[h.to]}` : L(`Створено: ${STATUS_LABEL[h.to]}`, `Created: ${STATUS_LABEL[h.to]}`),
       who: h.by,
       color: statusColor(h.to),
     }));
     for (const a of this.db.activity.items()) {
       if (a.entityId === o.id && a.action !== 'status' && a.action !== 'create') items.push({ at: a.createdAt, text: a.summary.replace(`${o.number}: `, ''), who: '', color: 'var(--border-strong)' });
     }
-    for (const p of o.payments) items.push({ at: p.at, text: `Оплата ${fmtMoney(p.amount)} (${PAY_LABEL[p.method].toLowerCase()})`, who: '', color: 'var(--success)' });
+    for (const p of o.payments) items.push({ at: p.at, text: L(`Оплата ${fmtMoney(p.amount)} (${PAY_LABEL[p.method].toLowerCase()})`, `Payment ${fmtMoney(p.amount)} (${PAY_LABEL[p.method].toLowerCase()})`), who: '', color: 'var(--success)' });
     return items.sort((a, b) => b.at.localeCompare(a.at));
   });
 
@@ -449,7 +454,7 @@ export class OrderPage implements HasUnsaved {
         this.notes.set(o.notes);
       }
       lastId = o.id;
-      this.titles.set(`Наряд ${o.number}`);
+      this.titles.set(L(`Наряд ${o.number}`, `Work order ${o.number}`));
     });
   }
 
@@ -519,7 +524,7 @@ export class OrderPage implements HasUnsaved {
   }
   protected setDiscount(v: number): void {
     const o = this.order()!;
-    void this.run(() => this.orders.patch(o, { discountPct: v }, `${o.number}: знижка ${v}%`));
+    void this.run(() => this.orders.patch(o, { discountPct: v }, L(`${o.number}: знижка ${v}%`, `${o.number}: discount ${v}%`)));
   }
   protected addWork(id: string): void {
     const w = this.db.works.get(id);
@@ -534,24 +539,24 @@ export class OrderPage implements HasUnsaved {
     void this.run(async () => {
       await this.orders.addPart(this.order()!, p, 1);
       const avail = this.stock.available(p, this.order()!.branchId);
-      if (avail < 0) this.toast.info(`${p.brand} ${p.sku}: на складі немає — додайте в замовлення постачальнику`);
+      if (avail < 0) this.toast.info(L(`${p.brand} ${p.sku}: на складі немає — додайте в замовлення постачальнику`, `${p.brand} ${p.sku}: out of stock — add it to a purchase order`));
     });
   }
   protected async removeLine(kind: 'work' | 'part', line: OrderWork | OrderPart): Promise<void> {
     const ok = await this.dialogs.confirm({
-      title: `Прибрати «${line.name}»?`,
-      text: kind === 'part' && ('issued' in line && (line.issued || line.reserved)) ? 'Запчастина повернеться на склад.' : undefined,
-      confirm: 'Прибрати',
+      title: L(`Прибрати «${line.name}»?`, `Remove “${line.name}”?`),
+      text: kind === 'part' && ('issued' in line && (line.issued || line.reserved)) ? L('Запчастина повернеться на склад.', 'The part will go back to stock.') : undefined,
+      confirm: L('Прибрати', 'Remove'),
       danger: true,
     });
     if (ok) await this.run(() => this.orders.removeLine(this.order()!, kind, line.id));
   }
 
   protected pay(): void {
-    this.dialogs.open(PaymentDialog, this.order()!, { size: 'sm', label: 'Прийняти оплату' });
+    this.dialogs.open(PaymentDialog, this.order()!, { size: 'sm', label: L('Прийняти оплату', 'Take payment') });
   }
   protected editSchedule(): void {
-    this.dialogs.open(ScheduleDialog, this.order()!, { size: 'md', label: 'Змінити запис' });
+    this.dialogs.open(ScheduleDialog, this.order()!, { size: 'md', label: L('Змінити запис', 'Change booking') });
   }
 
   protected resetText(): void {
@@ -562,17 +567,17 @@ export class OrderPage implements HasUnsaved {
   protected async saveText(): Promise<void> {
     const o = this.order()!;
     await this.run(async () => {
-      await this.orders.patch(o, { complaint: this.complaint().trim(), notes: this.notes().trim() }, `${o.number}: оновлено нотатки`);
-      this.toast.success('Збережено');
+      await this.orders.patch(o, { complaint: this.complaint().trim(), notes: this.notes().trim() }, L(`${o.number}: оновлено нотатки`, `${o.number}: notes updated`));
+      this.toast.success(L('Збережено', 'Saved'));
     });
   }
 
   protected async remove(): Promise<void> {
     const o = this.order()!;
     const ok = await this.dialogs.confirm({
-      title: `Видалити наряд ${o.number}?`,
-      text: 'Наряд зникне з табло, історії клієнта й аналітики. Резерви запчастин буде знято. Якщо треба лише відмінити візит — скасуйте наряд.',
-      confirm: 'Видалити',
+      title: L(`Видалити наряд ${o.number}?`, `Delete work order ${o.number}?`),
+      text: L('Наряд зникне з табло, історії клієнта й аналітики. Резерви запчастин буде знято. Якщо треба лише відмінити візит — скасуйте наряд.', 'The work order will disappear from the board, the customer’s history and analytics. Part reservations will be released. To call off a visit, cancel the work order instead.'),
+      confirm: L('Видалити', 'Delete'),
       danger: true,
     });
     if (!ok) return;
@@ -580,7 +585,7 @@ export class OrderPage implements HasUnsaved {
       const restore = await this.orders.remove(o);
       this.resetText();
       await this.router.navigate(['/naryady']);
-      this.toast.undo(`Наряд ${o.number} видалено`, restore);
+      this.toast.undo(L(`Наряд ${o.number} видалено`, `Work order ${o.number} deleted`), restore);
     });
   }
 }

@@ -1,3 +1,5 @@
+import { L, isEn } from '../i18n';
+
 /**
  * Мок-декодер VIN: перевірка формату + розбір за кодом виробника (WMI, символи 1–3),
  * описовою частиною (VDS, символи 4–8) і модельним роком (символ 10).
@@ -20,7 +22,7 @@ export interface VinMaker {
   models: VinModel[];
 }
 
-export const VIN_DB: VinMaker[] = [
+const VIN_DB_UK: VinMaker[] = [
   {
     wmi: 'TMB',
     make: 'Skoda',
@@ -155,6 +157,33 @@ export const VIN_DB: VinMaker[] = [
   },
 ];
 
+const COUNTRY_EN: Record<string, string> = {
+  Чехія: 'Czechia',
+  Німеччина: 'Germany',
+  Японія: 'Japan',
+  Франція: 'France',
+  Корея: 'South Korea',
+  'Велика Британія': 'United Kingdom',
+  Україна: 'Ukraine',
+};
+
+/** Двигун і коробка англійською: «150 к.с.» → «150 hp», «МКПП-5» → «MT-5», «АКПП-6» → «AT-6» */
+const specEn = (s: string) =>
+  s
+    .replace('к.с.', 'hp')
+    .replace(/електро, 40 кВт.год/, 'electric, 40 kWh')
+    .replace('МКПП', 'MT')
+    .replace('АКПП', 'AT')
+    .replace('редуктор', 'single-speed');
+
+export const VIN_DB: VinMaker[] = isEn
+  ? VIN_DB_UK.map((m) => ({
+      ...m,
+      country: COUNTRY_EN[m.country] ?? m.country,
+      models: m.models.map((x) => ({ ...x, engine: specEn(x.engine), gearbox: specEn(x.gearbox) })),
+    }))
+  : VIN_DB_UK;
+
 /** Символ моделі року (позиція 10) — цикл 30 років */
 const YEAR_CODES = 'ABCDEFGHJKLMNPRSTVWXY123456789';
 
@@ -178,10 +207,10 @@ export type VinCheck = { ok: true } | { ok: false; error: string };
 /** Формат VIN: 17 символів, латиниця й цифри без I, O, Q */
 export function checkVin(raw: string): VinCheck {
   const vin = normalizeVin(raw);
-  if (!vin) return { ok: false, error: 'Введіть VIN' };
-  if (vin.length !== 17) return { ok: false, error: `VIN має 17 символів, зараз ${vin.length}` };
-  if (/[IOQ]/.test(vin)) return { ok: false, error: 'У VIN не буває літер I, O і Q — перевірте, чи це не 1 і 0' };
-  if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)) return { ok: false, error: 'Лише латинські літери й цифри' };
+  if (!vin) return { ok: false, error: L('Введіть VIN', 'Enter the VIN') };
+  if (vin.length !== 17) return { ok: false, error: L(`VIN має 17 символів, зараз ${vin.length}`, `A VIN has 17 characters, this one has ${vin.length}`) };
+  if (/[IOQ]/.test(vin)) return { ok: false, error: L('У VIN не буває літер I, O і Q — перевірте, чи це не 1 і 0', 'A VIN never contains I, O or Q — check whether they’re 1 and 0') };
+  if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)) return { ok: false, error: L('Лише латинські літери й цифри', 'Only Latin letters and digits') };
   return { ok: true };
 }
 

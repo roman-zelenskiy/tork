@@ -5,6 +5,7 @@ import { compressImage } from './image';
 import { ToastService } from '../../core/ui/toast.service';
 import { Dialogs } from '../../core/ui/dialogs.service';
 import { PhotoViewer } from './photo-viewer';
+import { L } from '../../core/i18n';
 
 /**
  * Завантаження фото: кнопка або перетягування файлів. Фото стискаються в браузері
@@ -25,14 +26,14 @@ import { PhotoViewer } from './photo-viewer';
     >
       @for (p of photos(); track $index; let i = $index) {
         <div class="group relative size-[72px] overflow-hidden rounded-lg border border-line bg-subtle">
-          <button type="button" class="block size-full" [attr.aria-label]="'Переглянути фото ' + (i + 1)" (click)="view(i)">
+          <button type="button" class="block size-full" [attr.aria-label]="L('Переглянути фото ', 'View photo ') + (i + 1)" (click)="view(i)">
             <img [src]="p" alt="" class="size-full object-cover" loading="lazy" />
           </button>
           @if (!readonly()) {
             <button
               type="button"
               class="absolute top-1 right-1 grid size-6 place-items-center rounded-md bg-[rgb(0_0_0/0.55)] text-white opacity-100 hover:bg-[rgb(0_0_0/0.75)] sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
-              [attr.aria-label]="'Видалити фото ' + (i + 1)"
+              [attr.aria-label]="L('Видалити фото ', 'Delete photo ') + (i + 1)"
               (click)="remove(i)"
             >
               <svg [lucideIcon]="I.x" [size]="14" aria-hidden="true"></svg>
@@ -53,27 +54,28 @@ import { PhotoViewer } from './photo-viewer';
           } @else {
             <span class="flex flex-col items-center gap-1 text-[11px]">
               <svg [lucideIcon]="I.camera" [size]="18" aria-hidden="true"></svg>
-              Фото
+              {{ L('Фото', 'Photo') }}
             </span>
           }
         </button>
       }
       @if (readonly() && !photos().length) {
-        <span class="text-[13px] text-ink-3">Фото немає</span>
+        <span class="text-[13px] text-ink-3">{{ L('Фото немає', 'No photos') }}</span>
       }
     </div>
     <input #file type="file" accept="image/*" capture="environment" multiple class="sr-only" tabindex="-1" aria-hidden="true" (change)="onPick(file)" />
     @if (!readonly()) {
-      <p class="mt-1 mb-0 text-xs text-ink-3">До {{ max() }} фото, стискаються до ~100 КБ. Можна перетягнути файли сюди.</p>
+      <p class="mt-1 mb-0 text-xs text-ink-3">{{ L('До ' + max() + ' фото, стискаються до ~100 КБ. Можна перетягнути файли сюди.', 'Up to ' + max() + ' photos, compressed to ~100 KB. You can drag files here.') }}</p>
     }
   `,
 })
 export class PhotoUpload {
+  protected readonly L = L;
   protected readonly I = I;
   readonly photos = model<string[]>([]);
   readonly max = input(6);
   readonly readonly = input(false);
-  readonly label = input('Додати фото');
+  readonly label = input(L('Додати фото', 'Add photos'));
   protected readonly busy = signal(false);
   protected readonly over = signal(false);
   private readonly toast = inject(ToastService);
@@ -93,7 +95,7 @@ export class PhotoUpload {
   private async add(files: File[]): Promise<void> {
     if (!files.length) return;
     const room = this.max() - this.photos().length;
-    if (files.length > room) this.toast.info(`Додано лише ${room} з ${files.length} — максимум ${this.max()} фото`);
+    if (files.length > room) this.toast.info(L(`Додано лише ${room} з ${files.length} — максимум ${this.max()} фото`, `Only ${room} of ${files.length} added — ${this.max()} photos at most`));
     this.busy.set(true);
     try {
       const out: string[] = [];
@@ -111,6 +113,6 @@ export class PhotoUpload {
   }
 
   protected view(i: number): void {
-    this.dialogs.open(PhotoViewer, { photos: this.photos(), index: i }, { size: 'xl', label: 'Перегляд фото' });
+    this.dialogs.open(PhotoViewer, { photos: this.photos(), index: i }, { size: 'xl', label: L('Перегляд фото', 'Photo viewer') });
   }
 }

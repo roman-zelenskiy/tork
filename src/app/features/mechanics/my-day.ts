@@ -15,6 +15,7 @@ import { PhotoUpload } from '../../shared/ui/photo-upload';
 import { Option } from '../../shared/ui/option';
 import { fmtDuration, fmtHours, fmtTime } from '../../shared/format';
 import { MechanicsHeader } from './mechanics-header';
+import { BRAND, L } from '../../core/i18n';
 
 const ME_KEY = 'tork-ui:my-mechanic';
 
@@ -27,17 +28,17 @@ const ME_KEY = 'tork-ui:my-mechanic';
   imports: [RouterLink, Icon, Select, Plate, StatusBadge, EmptyState, PhotoUpload, MechanicsHeader],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <tk-mechanics-header title="Мій день механіка" [subtitle]="null" />
+    <tk-mechanics-header [title]="L('Мій день механіка', 'Mechanic’s day')" [subtitle]="null" />
     <div class="mb-5 flex flex-wrap items-end gap-3">
       <div class="field w-full sm:w-72">
-        <label class="label" for="me-sel">Я —</label>
-        <tk-select inputId="me-sel" [options]="mechOptions()" [value]="me()" placeholder="Оберіть себе" (valueChange)="setMe($event)" />
+        <label class="label" for="me-sel">{{ L('Я —', 'I am') }}</label>
+        <tk-select inputId="me-sel" [options]="mechOptions()" [value]="me()" [placeholder]="L('Оберіть себе', 'Choose yourself')" (valueChange)="setMe($event)" />
       </div>
       @if (me()) {
-        <dl class="m-0 grid flex-1 grid-cols-3 gap-2 sm:max-w-md" aria-label="Підсумок дня">
-          <div class="card p-3"><dt class="text-[11px] text-ink-3">Закрито норми</dt><dd class="m-0 text-lg font-semibold num">{{ hours(today().norm) }}</dd></div>
-          <div class="card p-3"><dt class="text-[11px] text-ink-3">Фактично</dt><dd class="m-0 text-lg font-semibold num" [attr.aria-label]="dur(today().actual)">{{ hm(today().actual) }}</dd></div>
-          <div class="card p-3"><dt class="text-[11px] text-ink-3">Ефективність</dt><dd class="m-0 text-lg font-semibold num" [class.text-success]="(today().eff ?? 0) >= 100">{{ today().eff !== null ? today().eff + '%' : '—' }}</dd></div>
+        <dl class="m-0 grid flex-1 grid-cols-3 gap-2 sm:max-w-md" [attr.aria-label]="L('Підсумок дня', 'Day summary')">
+          <div class="card p-3"><dt class="text-[11px] text-ink-3">{{ L('Закрито норми', 'Standard closed') }}</dt><dd class="m-0 text-lg font-semibold num">{{ hours(today().norm) }}</dd></div>
+          <div class="card p-3"><dt class="text-[11px] text-ink-3">{{ L('Фактично', 'Actual') }}</dt><dd class="m-0 text-lg font-semibold num" [attr.aria-label]="dur(today().actual)">{{ hm(today().actual) }}</dd></div>
+          <div class="card p-3"><dt class="text-[11px] text-ink-3">{{ L('Ефективність', 'Efficiency') }}</dt><dd class="m-0 text-lg font-semibold num" [class.text-success]="(today().eff ?? 0) >= 100">{{ today().eff !== null ? today().eff + '%' : '—' }}</dd></div>
         </dl>
       }
     </div>
@@ -47,9 +48,9 @@ const ME_KEY = 'tork-ui:my-mechanic';
         <div class="skeleton mb-3 h-48"></div>
       }
     } @else if (!me()) {
-      <div class="card"><tk-empty art="calendar" title="Оберіть себе у списку" text="Тут з’являться ваші наряди на сьогодні з кнопками «Почати», «Пауза», «Готово»." /></div>
+      <div class="card"><tk-empty art="calendar" [title]="L('Оберіть себе у списку', 'Choose yourself from the list')" [text]="L('Тут з’являться ваші наряди на сьогодні з кнопками «Почати», «Пауза», «Готово».', 'Your work orders for today will appear here with “Start”, “Pause” and “Done” buttons.')" /></div>
     } @else if (!list().length) {
-      <div class="card"><tk-empty art="done" title="Робіт немає" text="На вас зараз не призначено відкритих нарядів. Майстер-приймальник додасть їх на табло." /></div>
+      <div class="card"><tk-empty art="done" [title]="L('Робіт немає', 'No jobs')" [text]="L('На вас зараз не призначено відкритих нарядів. Майстер-приймальник додасть їх на табло.', 'You have no open work orders right now. The service advisor will add them to the board.')" /></div>
     } @else {
       <div class="grid gap-4 lg:grid-cols-2">
         @for (x of list(); track x.order.id) {
@@ -76,11 +77,11 @@ const ME_KEY = 'tork-ui:my-mechanic';
                     <div class="min-w-0 flex-1">
                       <div class="text-[14px] font-medium" [class.line-through]="w.state === 'done'" [class.text-ink-3]="w.state === 'done'">{{ w.name }}</div>
                       <div class="mt-0.5 text-[13px] text-ink-2 num">
-                        <span [class.font-semibold]="!!w.runningSince" [class.text-accent-ink]="!!w.runningSince">{{ w.runningSince ? clock(t) : dur(t) }}</span> з норми {{ dur(w.hours * 60) }}
+                        <span [class.font-semibold]="!!w.runningSince" [class.text-accent-ink]="!!w.runningSince">{{ w.runningSince ? clock(t) : dur(t) }}</span> {{ L('з норми', 'of standard') }} {{ dur(w.hours * 60) }}
                       </div>
                     </div>
                     @if (w.state === 'done') {
-                      <span class="badge badge-success"><svg [lucideIcon]="I.check" [size]="12" aria-hidden="true"></svg>Готово</span>
+                      <span class="badge badge-success"><svg [lucideIcon]="I.check" [size]="12" aria-hidden="true"></svg>{{ L('Готово', 'Done') }}</span>
                     }
                   </div>
                   <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
@@ -89,15 +90,15 @@ const ME_KEY = 'tork-ui:my-mechanic';
                   @if (w.state !== 'done') {
                     <div class="mt-3 grid grid-cols-2 gap-2">
                       @if (w.runningSince) {
-                        <button type="button" class="btn btn-lg" [disabled]="busy()" (click)="pause(x.order, w)"><svg [lucideIcon]="I.pause" [size]="18" aria-hidden="true"></svg>Пауза</button>
+                        <button type="button" class="btn btn-lg" [disabled]="busy()" (click)="pause(x.order, w)"><svg [lucideIcon]="I.pause" [size]="18" aria-hidden="true"></svg>{{ L('Пауза', 'Pause') }}</button>
                       } @else {
-                        <button type="button" class="btn btn-lg btn-primary" [disabled]="busy()" (click)="start(x.order, w)"><svg [lucideIcon]="I.play" [size]="18" aria-hidden="true"></svg>{{ w.state === 'paused' ? 'Продовжити' : 'Почати' }}</button>
+                        <button type="button" class="btn btn-lg btn-primary" [disabled]="busy()" (click)="start(x.order, w)"><svg [lucideIcon]="I.play" [size]="18" aria-hidden="true"></svg>{{ w.state === 'paused' ? L('Продовжити', 'Resume') : L('Почати', 'Start') }}</button>
                       }
-                      <button type="button" class="btn btn-lg" [disabled]="busy()" (click)="finish(x.order, w)"><svg [lucideIcon]="I.check" [size]="18" aria-hidden="true"></svg>Готово</button>
+                      <button type="button" class="btn btn-lg" [disabled]="busy()" (click)="finish(x.order, w)"><svg [lucideIcon]="I.check" [size]="18" aria-hidden="true"></svg>{{ L('Готово', 'Done') }}</button>
                     </div>
                   }
                   <details class="mt-2">
-                    <summary class="w-fit rounded text-[13px] text-ink-2 hover:text-ink">Фото роботи ({{ w.photos.length }})</summary>
+                    <summary class="w-fit rounded text-[13px] text-ink-2 hover:text-ink">{{ L('Фото роботи', 'Job photos') }} ({{ w.photos.length }})</summary>
                     <tk-photo-upload class="mt-2" [photos]="w.photos" [max]="6" (photosChange)="photos(x.order, w, $event)" />
                   </details>
                 </li>
@@ -111,6 +112,7 @@ const ME_KEY = 'tork-ui:my-mechanic';
   `,
 })
 export class MyDay {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly db = inject(DbService);
   private readonly mech = inject(MechanicsService);
@@ -127,7 +129,7 @@ export class MyDay {
   private readonly tick = signal(Date.now());
 
   protected readonly mechOptions = computed<Option<string>[]>(() =>
-    this.mech.mechanics().map((m) => ({ value: m.id, label: m.name, hint: this.db.branches.get(m.branchId)?.name.replace('Торк ', '') })),
+    this.mech.mechanics().map((m) => ({ value: m.id, label: m.name, hint: this.db.branches.get(m.branchId)?.name.replace(`${BRAND} `, '') })),
   );
   protected readonly list = computed(() => (this.me() ? this.mech.myWorks(this.me()!) : []));
   protected readonly today = computed(() => {
@@ -211,18 +213,18 @@ export class MyDay {
     }
   }
   protected start(o: Order, w: OrderWork): void {
-    void this.run(() => this.mech.start(o, w, this.me()!), `Почато: ${w.name}`);
+    void this.run(() => this.mech.start(o, w, this.me()!), `${L('Почато', 'Started')}: ${w.name}`);
   }
   protected pause(o: Order, w: OrderWork): void {
-    void this.run(() => this.mech.pause(this.db.orders.get(o.id)!, w), `Пауза: ${w.name}`);
+    void this.run(() => this.mech.pause(this.db.orders.get(o.id)!, w), `${L('Пауза', 'Paused')}: ${w.name}`);
   }
   protected finish(o: Order, w: OrderWork): void {
     void this.run(async () => {
       const allDone = await this.mech.finish(this.db.orders.get(o.id)!, w);
-      this.toast.success(allDone ? `${o.number}: усе виконано, передано на контроль якості` : `Виконано: ${w.name}`);
-    }, `Виконано: ${w.name}`);
+      this.toast.success(allDone ? L(`${o.number}: усе виконано, передано на контроль якості`, `${o.number}: all done, moved to quality check`) : `${L('Виконано', 'Done')}: ${w.name}`);
+    }, `${L('Виконано', 'Done')}: ${w.name}`);
   }
   protected photos(o: Order, w: OrderWork, p: string[]): void {
-    void this.run(() => this.mech.addPhotos(this.db.orders.get(o.id)!, w, p), 'Фото збережено');
+    void this.run(() => this.mech.addPhotos(this.db.orders.get(o.id)!, w, p), L('Фото збережено', 'Photos saved'));
   }
 }

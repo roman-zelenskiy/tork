@@ -15,6 +15,7 @@ import { RadioGroup } from '../../shared/ui/checkbox';
 import { PhotoUpload } from '../../shared/ui/photo-upload';
 import { Option } from '../../shared/ui/option';
 import { fmtHours, fmtMoney } from '../../shared/format';
+import { L } from '../../core/i18n';
 
 /** Рекомендація після діагностики: робота, пріоритет, пояснення й фото для клієнта */
 @Component({
@@ -24,43 +25,44 @@ import { fmtHours, fmtMoney } from '../../shared/format';
   host: { class: 'flex h-full flex-col' },
   template: `
     <div class="dlg-head items-center!">
-      <div class="flex-1"><h2>Рекомендація</h2><p>Клієнт побачить назву, пояснення, фото й ціну</p></div>
-      <button type="button" class="btn btn-ghost btn-icon" aria-label="Закрити" (click)="requestClose()"><svg [lucideIcon]="I.x" aria-hidden="true"></svg></button>
+      <div class="flex-1"><h2>{{ L('Рекомендація', 'Recommendation') }}</h2><p>{{ L('Клієнт побачить назву, пояснення, фото й ціну', 'The customer will see the name, explanation, photos and price') }}</p></div>
+      <button type="button" class="btn btn-ghost btn-icon" [attr.aria-label]="L('Закрити', 'Close')" (click)="requestClose()"><svg [lucideIcon]="I.x" aria-hidden="true"></svg></button>
     </div>
     <form class="flex min-h-0 flex-1 flex-col" novalidate (submit)="$event.preventDefault(); save()">
       <div class="dlg-body flex flex-col gap-4">
-        <tk-field forId="rc-work" label="Робота" [required]="true" [error]="err('name')">
-          <tk-combobox inputId="rc-work" [options]="workOptions()" [(value)]="workId" [icon]="I.wrench" placeholder="З довідника або своя назва" createLabel="Своя робота" (create)="custom($event)" [invalid]="!!err('name')" />
+        <tk-field forId="rc-work" [label]="L('Робота', 'Job')" [required]="true" [error]="err('name')">
+          <tk-combobox inputId="rc-work" [options]="workOptions()" [(value)]="workId" [icon]="I.wrench" [placeholder]="L('З довідника або своя назва', 'From the directory or a custom name')" [createLabel]="L('Своя робота', 'Custom job')" (create)="custom($event)" [invalid]="!!err('name')" />
         </tk-field>
         @if (customName()) {
-          <p class="-mt-2 m-0 text-[13px]">Своя робота: <b>{{ customName() }}</b></p>
+          <p class="-mt-2 m-0 text-[13px]">{{ L('Своя робота', 'Custom job') }}: <b>{{ customName() }}</b></p>
         }
         <div class="grid grid-cols-2 gap-3">
-          <tk-field forId="rc-h" label="Нормо-години">
+          <tk-field forId="rc-h" [label]="L('Нормо-години', 'Standard hours')">
             <tk-stepper inputId="rc-h" [(value)]="hours" [min]="0.1" [max]="40" [step]="0.1" [decimals]="1" />
           </tk-field>
-          <div class="field"><span class="label">Вартість роботи</span><span class="flex h-9 items-center font-semibold num">{{ money(price()) }}</span></div>
+          <div class="field"><span class="label">{{ L('Вартість роботи', 'Labour cost') }}</span><span class="flex h-9 items-center font-semibold num">{{ money(price()) }}</span></div>
         </div>
         <div class="field">
-          <span class="label" id="rc-p">Пріоритет</span>
+          <span class="label" id="rc-p">{{ L('Пріоритет', 'Priority') }}</span>
           <tk-radio-group labelledBy="rc-p" [options]="priorities" [(value)]="priority" />
         </div>
-        <tk-field forId="rc-d" label="Пояснення для клієнта" [error]="err('desc')" hint="Простими словами: що не так і чим загрожує">
-          <tk-text-field inputId="rc-d" [multiline]="true" [rows]="3" [maxLength]="300" [(value)]="description" placeholder="Колодки стерті до 2 мм, гальмівний шлях збільшено" [invalid]="!!err('desc')" />
+        <tk-field forId="rc-d" [label]="L('Пояснення для клієнта', 'Explanation for the customer')" [error]="err('desc')" [hint]="L('Простими словами: що не так і чим загрожує', 'In plain words: what’s wrong and what could happen')">
+          <tk-text-field inputId="rc-d" [multiline]="true" [rows]="3" [maxLength]="300" [(value)]="description" [placeholder]="L('Колодки стерті до 2 мм, гальмівний шлях збільшено', 'The pads are worn to 2 mm, braking distance has increased')" [invalid]="!!err('desc')" />
         </tk-field>
-        <tk-field forId="rc-part" label="Запчастина (необов’язково)">
-          <tk-combobox inputId="rc-part" [options]="partOptions()" [(value)]="partId" [icon]="I.package" placeholder="Артикул або назва" />
+        <tk-field forId="rc-part" [label]="L('Запчастина (необов’язково)', 'Part (optional)')">
+          <tk-combobox inputId="rc-part" [options]="partOptions()" [(value)]="partId" [icon]="I.package" [placeholder]="L('Артикул або назва', 'SKU or name')" />
         </tk-field>
-        <div class="field"><span class="label">Фото</span><tk-photo-upload [(photos)]="photos" [max]="4" /></div>
+        <div class="field"><span class="label">{{ L('Фото', 'Photos') }}</span><tk-photo-upload [(photos)]="photos" [max]="4" /></div>
       </div>
       <div class="dlg-foot">
-        <button type="button" class="btn" (click)="requestClose()">Скасувати</button>
-        <button type="submit" class="btn btn-primary" [disabled]="saving()">Додати рекомендацію</button>
+        <button type="button" class="btn" (click)="requestClose()">{{ L('Скасувати', 'Cancel') }}</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">{{ L('Додати рекомендацію', 'Add recommendation') }}</button>
       </div>
     </form>
   `,
 })
 export class RecommendationDialog extends FormDialog<boolean> {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly money = fmtMoney;
   private readonly db = inject(DbService);
@@ -70,7 +72,7 @@ export class RecommendationDialog extends FormDialog<boolean> {
   protected readonly priorities: Option<Priority>[] = (['must', 'recommended', 'later'] as Priority[]).map((p) => ({
     value: p,
     label: PRIORITY_LABEL[p],
-    hint: p === 'must' ? 'Безпека або подальше пошкодження' : p === 'recommended' ? 'Варто зробити найближчим часом' : 'Можна запланувати на наступний візит',
+    hint: p === 'must' ? L('Безпека або подальше пошкодження', 'Safety or further damage') : p === 'recommended' ? L('Варто зробити найближчим часом', 'Worth doing soon') : L('Можна запланувати на наступний візит', 'Can be planned for the next visit'),
   }));
   protected readonly workId = signal<string | null>(null);
   protected readonly customName = signal('');
@@ -106,8 +108,8 @@ export class RecommendationDialog extends FormDialog<boolean> {
   }
   protected errors() {
     return {
-      name: this.work() || this.customName() ? null : 'Оберіть роботу або введіть свою',
-      desc: this.description().trim().length < 10 ? 'Поясніть клієнту, навіщо ця робота (від 10 символів)' : null,
+      name: this.work() || this.customName() ? null : L('Оберіть роботу або введіть свою', 'Choose a job or enter your own'),
+      desc: this.description().trim().length < 10 ? L('Поясніть клієнту, навіщо ця робота (від 10 символів)', 'Explain to the customer why this job is needed (10+ characters)') : null,
     };
   }
   protected save(): Promise<void> {
@@ -121,7 +123,7 @@ export class RecommendationDialog extends FormDialog<boolean> {
         photos: this.photos(),
         partId: this.partId(),
       });
-      this.toast.success('Рекомендацію додано');
+      this.toast.success(L('Рекомендацію додано', 'Recommendation added'));
       return true;
     });
   }

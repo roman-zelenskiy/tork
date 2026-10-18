@@ -5,6 +5,7 @@ import { I } from '../icons';
 import { addDays, fmtDate, startOfDay, ymd } from '../format';
 import { Calendar } from './calendar';
 import { DROPDOWN_POSITIONS } from './option';
+import { L } from '../../core/i18n';
 
 /** Вибір дати: кнопка-поле + календар у CDK Overlay. Значення — «YYYY-MM-DD» */
 @Component({
@@ -23,7 +24,7 @@ import { DROPDOWN_POSITIONS } from './option';
       #origin="cdkOverlayOrigin"
       aria-haspopup="dialog"
       [id]="inputId()"
-      [attr.aria-label]="ariaLabel() ? ariaLabel() + ': ' + (label() || 'не обрано') : null"
+      [attr.aria-label]="ariaLabel() ? ariaLabel() + ': ' + (label() || L('не обрано', 'not selected')) : null"
       [attr.aria-expanded]="open()"
       [attr.aria-invalid]="invalid() || null"
       [attr.aria-describedby]="describedBy()"
@@ -46,14 +47,14 @@ import { DROPDOWN_POSITIONS } from './option';
       (detach)="close(false)"
       (attach)="cal()?.focusCurrent()"
     >
-      <div class="popover p-3" role="dialog" aria-label="Вибір дати" (keydown.escape)="close()">
+      <div class="popover p-3" role="dialog" [attr.aria-label]="L('Вибір дати', 'Choose a date')" (keydown.escape)="close()">
         <tk-calendar [value]="value()" [min]="min()" [max]="max()" (picked)="pick($event)" />
         @if (presets()) {
           <div class="mt-2 flex gap-1 border-t border-line pt-2">
-            <button type="button" class="btn btn-ghost btn-sm" (click)="pick(today)">Сьогодні</button>
-            <button type="button" class="btn btn-ghost btn-sm" (click)="pick(tomorrow)">Завтра</button>
+            <button type="button" class="btn btn-ghost btn-sm" (click)="pick(today)">{{ L('Сьогодні', 'Today') }}</button>
+            <button type="button" class="btn btn-ghost btn-sm" (click)="pick(tomorrow)">{{ L('Завтра', 'Tomorrow') }}</button>
             @if (value() && clearable()) {
-              <button type="button" class="btn btn-ghost btn-sm ml-auto" (click)="clear()">Очистити</button>
+              <button type="button" class="btn btn-ghost btn-sm ml-auto" (click)="clear()">{{ L('Очистити', 'Clear') }}</button>
             }
           </div>
         }
@@ -62,6 +63,7 @@ import { DROPDOWN_POSITIONS } from './option';
   `,
 })
 export class DatePicker {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly positions = DROPDOWN_POSITIONS;
   protected readonly today = ymd(new Date());
@@ -69,7 +71,7 @@ export class DatePicker {
   readonly value = model<string | null>(null);
   readonly min = input<string | null>(null);
   readonly max = input<string | null>(null);
-  readonly placeholder = input('Оберіть дату');
+  readonly placeholder = input(L('Оберіть дату', 'Choose a date'));
   readonly invalid = input(false);
   readonly disabled = input(false);
   readonly clearable = input(false);
@@ -125,7 +127,7 @@ export interface DateRange {
       cdkOverlayOrigin
       #origin="cdkOverlayOrigin"
       aria-haspopup="dialog"
-      [attr.aria-label]="'Період: ' + label()"
+      [attr.aria-label]="L('Період: ', 'Period: ') + label()"
       [attr.aria-expanded]="open()"
       (click)="openPanel()"
     >
@@ -145,7 +147,7 @@ export interface DateRange {
       (detach)="close(false)"
       (attach)="cal()?.focusCurrent()"
     >
-      <div class="popover flex flex-col gap-3 p-3 sm:flex-row" role="dialog" aria-label="Вибір періоду" (keydown.escape)="close()">
+      <div class="popover flex flex-col gap-3 p-3 sm:flex-row" role="dialog" [attr.aria-label]="L('Вибір періоду', 'Choose a period')" (keydown.escape)="close()">
         <div class="flex flex-row flex-wrap gap-1 sm:w-36 sm:flex-col">
           @for (p of presetList; track p.label) {
             <button type="button" class="menu-item w-auto! sm:w-full!" [class.active]="isPreset(p)" (click)="applyPreset(p)">{{ p.label }}</button>
@@ -153,13 +155,14 @@ export interface DateRange {
         </div>
         <div class="sm:border-l sm:border-line sm:pl-3">
           <tk-calendar [range]="true" [rangeStart]="start()" [rangeEnd]="end()" [max]="today" (picked)="pick($event)" />
-          <p class="mt-2 mb-0 text-xs text-ink-3">{{ start() && !end() ? 'Оберіть кінцеву дату' : 'Оберіть початкову дату' }}</p>
+          <p class="mt-2 mb-0 text-xs text-ink-3">{{ start() && !end() ? L('Оберіть кінцеву дату', 'Choose the end date') : L('Оберіть початкову дату', 'Choose the start date') }}</p>
         </div>
       </div>
     </ng-template>
   `,
 })
 export class DateRangePicker {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly positions = DROPDOWN_POSITIONS;
   protected readonly today = ymd(new Date());
@@ -216,22 +219,22 @@ const back = (days: number): DateRange => {
   return { from: ymd(addDays(t, -days + 1)), to: ymd(t) };
 };
 export const PERIOD_PRESETS: { label: string; range: () => DateRange }[] = [
-  { label: 'Сьогодні', range: () => back(1) },
-  { label: '7 днів', range: () => back(7) },
-  { label: '30 днів', range: () => back(30) },
+  { label: L('Сьогодні', 'Today'), range: () => back(1) },
+  { label: L('7 днів', '7 days'), range: () => back(7) },
+  { label: L('30 днів', '30 days'), range: () => back(30) },
   {
-    label: 'Цей місяць',
+    label: L('Цей місяць', 'This month'),
     range: () => {
       const t = new Date();
       return { from: ymd(new Date(t.getFullYear(), t.getMonth(), 1)), to: ymd(t) };
     },
   },
   {
-    label: 'Минулий місяць',
+    label: L('Минулий місяць', 'Last month'),
     range: () => {
       const t = new Date();
       return { from: ymd(new Date(t.getFullYear(), t.getMonth() - 1, 1)), to: ymd(new Date(t.getFullYear(), t.getMonth(), 0)) };
     },
   },
-  { label: '90 днів', range: () => back(90) },
+  { label: L('90 днів', '90 days'), range: () => back(90) },
 ];

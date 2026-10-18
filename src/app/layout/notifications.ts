@@ -10,6 +10,7 @@ import { fmtAgo } from '../shared/format';
 import { EmptyState } from '../shared/ui/states';
 import { Tooltip } from '../shared/ui/tooltip';
 import { AppContext } from '../core/ui/app-context.service';
+import { L } from '../core/i18n';
 
 /** Центр сповіщень: дзвіночок у топбарі + панель (відповіді клієнтів, склад, наряди) */
 @Component({
@@ -22,10 +23,10 @@ import { AppContext } from '../core/ui/app-context.service';
       class="btn btn-ghost btn-icon relative"
       cdkOverlayOrigin
       #origin="cdkOverlayOrigin"
-      [attr.aria-label]="unread() ? 'Сповіщення: ' + unread() + ' непрочитаних' : 'Сповіщення'"
+      [attr.aria-label]="unread() ? L('Сповіщення: ' + unread() + ' непрочитаних', 'Notifications: ' + unread() + ' unread') : L('Сповіщення', 'Notifications')"
       [attr.aria-expanded]="open()"
       aria-haspopup="dialog"
-      tkTip="Сповіщення"
+      [tkTip]="L('Сповіщення', 'Notifications')"
       (click)="open.set(!open())"
     >
       <svg [lucideIcon]="I.bell" [size]="18" aria-hidden="true"></svg>
@@ -49,15 +50,15 @@ import { AppContext } from '../core/ui/app-context.service';
       <div
         class="popover flex max-h-[min(520px,80dvh)] w-[min(380px,calc(100vw-16px))] flex-col"
         role="dialog"
-        aria-label="Сповіщення"
+        [attr.aria-label]="L('Сповіщення', 'Notifications')"
         cdkTrapFocus
         [cdkTrapFocusAutoCapture]="true"
         (keydown.escape)="open.set(false)"
       >
         <div class="flex items-center gap-2 border-b border-line px-4 py-3">
-          <h2 class="m-0 flex-1 text-sm font-semibold">Сповіщення</h2>
+          <h2 class="m-0 flex-1 text-sm font-semibold">{{ L('Сповіщення', 'Notifications') }}</h2>
           <button type="button" class="btn btn-ghost btn-sm" [disabled]="!unread()" (click)="markAll()">
-            <svg [lucideIcon]="I.checkAll" aria-hidden="true"></svg>Прочитати всі
+            <svg [lucideIcon]="I.checkAll" aria-hidden="true"></svg>{{ L('Прочитати всі', 'Mark all as read') }}
           </button>
         </div>
         <div class="min-h-0 flex-1 overflow-y-auto p-1.5">
@@ -70,7 +71,7 @@ import { AppContext } from '../core/ui/app-context.service';
                 <span class="flex items-center gap-2">
                   <span class="truncate-1 flex-1 text-[13px]" [class.font-semibold]="!n.read">{{ n.title }}</span>
                   @if (!n.read) {
-                    <span class="size-2 flex-none rounded-full bg-accent" aria-label="непрочитане"></span>
+                    <span class="size-2 flex-none rounded-full bg-accent" [attr.aria-label]="L('непрочитане', 'unread')"></span>
                   }
                 </span>
                 <span class="mt-0.5 line-clamp-2 block text-xs leading-[1.45] text-ink-2">{{ n.text }}</span>
@@ -78,7 +79,7 @@ import { AppContext } from '../core/ui/app-context.service';
               </span>
             </button>
           } @empty {
-            <tk-empty art="bell" title="Нових сповіщень немає" text="Тут з’являться відповіді клієнтів на погодження, низькі залишки й зміни нарядів." [compact]="true" />
+            <tk-empty art="bell" [title]="L('Нових сповіщень немає', 'No new notifications')" [text]="L('Тут з’являться відповіді клієнтів на погодження, низькі залишки й зміни нарядів.', 'Customer approval responses, low stock and work order changes will show up here.')" [compact]="true" />
           }
         </div>
       </div>
@@ -86,6 +87,7 @@ import { AppContext } from '../core/ui/app-context.service';
   `,
 })
 export class Notifications {
+  protected readonly L = L;
   protected readonly I = I;
   private readonly db = inject(DbService);
   private readonly router = inject(Router);

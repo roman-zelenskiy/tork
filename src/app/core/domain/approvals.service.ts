@@ -2,17 +2,19 @@ import { Injectable, inject } from '@angular/core';
 import { DbService } from '../data/db.service';
 import { Approval, ApprovalItem, Decision, Order, OrderWork, Priority, Work } from '../data/models';
 import { formatPlate } from '../data/plates';
+import { fmtMoney } from '../../shared/format';
 import { newId, nowIso } from '../data/util';
 import { OrdersService } from './orders.service';
 import { StockService } from './stock.service';
 import { canMove, partPrice, workPrice } from './order-math';
 import { firstName, renderTemplate } from './messages';
 import { appUrl } from '../../shared/app-url';
+import { L } from '../i18n';
 
 export const PRIORITY_LABEL: Record<Priority, string> = {
-  must: 'Обов’язково',
-  recommended: 'Рекомендовано',
-  later: 'Можна відкласти',
+  must: L('Обов’язково', 'Required'),
+  recommended: L('Рекомендовано', 'Recommended'),
+  later: L('Можна відкласти', 'Can wait'),
 };
 
 function token(): string {
@@ -67,13 +69,13 @@ export class ApprovalsService {
     await this.db.orders.update(
       o.id,
       { works: [...o.works, line], parts },
-      { log: `${o.number}: рекомендація «${r.name}» (${PRIORITY_LABEL[r.priority].toLowerCase()})` },
+      { log: L(`${o.number}: рекомендація «${r.name}» (${PRIORITY_LABEL[r.priority].toLowerCase()})`, `${o.number}: recommendation “${r.name}” (${PRIORITY_LABEL[r.priority].toLowerCase()})`) },
     );
   }
 
   async send(o: Order, message: string, channel: 'sms' | 'viber'): Promise<Approval> {
     const { works, parts } = this.pending(o);
-    if (!works.length && !parts.length) throw new Error('Немає рекомендацій, що чекають погодження');
+    if (!works.length && !parts.length) throw new Error(L('Немає рекомендацій, що чекають погодження', 'No recommendations are waiting for approval'));
     const prev = this.db.approvals.get(o.approvalId);
     const items: ApprovalItem[] = [
       ...works.map((w) => ({
@@ -92,7 +94,7 @@ export class ApprovalsService {
     if (prev && prev.status === 'sent') await this.db.approvals.update(prev.id, { status: 'cancelled' }, { log: false });
     const a = await this.db.approvals.create(
       { token: token(), orderId: o.id, status: 'sent', items, message, sentAt: nowIso(), answeredAt: null, clientComment: '' },
-      { action: 'message', log: `${o.number}: надіслано погодження (${items.length} поз.)` },
+      { action: 'message', log: L(`${o.number}: надіслано погодження (${items.length} поз.)`, `${o.number}: approval request sent (${items.length} items)`) },
     );
     await this.db.orders.update(o.id, { approvalId: a.id }, { log: false });
     const cur = this.db.orders.get(o.id)!;
@@ -101,7 +103,7 @@ export class ApprovalsService {
     const client = this.db.clients.get(o.clientId);
     if (client) {
       await this.db.mailings.create(
-        { templateId: null, channel, title: `Погодження ${o.number}`, recipients: [{ clientId: client.id, carId: o.carId, phone: client.phone, text: message }] },
+        { templateId: null, channel, title: L(`Погодження ${o.number}`, `Approval ${o.number}`), recipients: [{ clientId: client.id, carId: o.carId, phone: client.phone, text: message }] },
         { log: false },
       );
     }
@@ -111,20 +113,20 @@ export class ApprovalsService {
   defaultMessage(o: Order): string {
     const client = this.db.clients.get(o.clientId);
     const car = this.db.cars.get(o.carId);
-    const tpl = this.db.templates.items().find((t) => t.name.toLowerCase().includes('погодж'))?.text ?? '{ім’я}, перегляньте рекомендації для {авто}: {посилання}';
+    const tpl = this.db.templates.items().find((t) => t.name.toLowerCase().includes(L('погодж', 'approv')))?.text ?? L('{ім’я}, перегляньте рекомендації для {авто}: {посилання}', '{name}, see our recommendations for your {car}: {link}');
     return renderTemplate(tpl, {
       name: client ? firstName(client.name) : '',
       car: car ? `${car.make} ${car.model}` : '',
       plate: car ? formatPlate(car.plate) : '',
       service: this.db.settings()?.serviceName,
-      link: '{посилання}',
+      link: L('{посилання}', '{link}'),
     });
   }
 
   /** Відповідь клієнта зі сторінки погодження */
   async answer(a: Approval, decisions: Record<string, Exclude<Decision, null>>, comment: string): Promise<void> {
     const fresh = this.db.approvals.get(a.id);
-    if (!fresh || fresh.status !== 'sent') throw new Error('Це погодження вже неактуальне — сервіс надіслав нове або скасував його.');
+    if (!fresh || fresh.status !== 'sent') throw new Error(L('Це погодження вже неактуальне — сервіс надіслав нове або скасував його.', 'This approval request is out of date — the service has sent a new one or cancelled it.'));
     const now = nowIso();
     await this.db.approvals.update(a.id, { status: 'answered', answeredAt: now, clientComment: comment.trim(), items: fresh.items.map((i) => ({ ...i, decision: decisions[i.lineId] ?? 'declined' })) }, { log: false });
 
@@ -137,7 +139,7 @@ export class ApprovalsService {
     const works = o.works.map((w) => (fresh.items.some((i) => i.lineId === w.id) ? { ...w, decision: dec(w.id) } : w));
     if (o.status !== 'zapys') parts = await this.stock.reserveParts(o, parts);
     const approvedSum = fresh.items.filter((i) => decisions[i.lineId] === 'approved').reduce((s, i) => s + i.price, 0);
-    await this.db.orders.update(o.id, { works, parts }, { action: 'update', log: `${o.number}: клієнт погодив ${fresh.items.filter((i) => decisions[i.lineId] === 'approved').length} з ${fresh.items.length}` });
+    await this.db.orders.update(o.id, { works, parts }, { action: 'update', log: L(`${o.number}: клієнт погодив ${fresh.items.filter((i) => decisions[i.lineId] === 'approved').length} з ${fresh.items.length}`, `${o.number}: customer approved ${fresh.items.filter((i) => decisions[i.lineId] === 'approved').length} of ${fresh.items.length}`) });
 
     // відмови → відкладені роботи (нагадування)
     for (const w of declinedWorks) {
@@ -162,14 +164,17 @@ export class ApprovalsService {
     const n = fresh.items.filter((i) => decisions[i.lineId] === 'approved').length;
     await this.db.notify({
       kind: 'approval',
-      title: `Відповідь на погодження: ${client?.name ?? 'клієнт'}`,
-      text: `${o.number}: погоджено ${n} з ${fresh.items.length} на ${approvedSum.toLocaleString('uk-UA')} ₴${comment.trim() ? `. Коментар: «${comment.trim()}»` : ''}`,
+      title: L(`Відповідь на погодження: ${client?.name ?? 'клієнт'}`, `Approval response: ${client?.name ?? 'customer'}`),
+      text: L(
+        `${o.number}: погоджено ${n} з ${fresh.items.length} на ${fmtMoney(approvedSum)}${comment.trim() ? `. Коментар: «${comment.trim()}»` : ''}`,
+        `${o.number}: ${n} of ${fresh.items.length} approved for ${fmtMoney(approvedSum)}${comment.trim() ? `. Comment: “${comment.trim()}”` : ''}`,
+      ),
       link: `/naryady/${o.id}`,
     });
   }
 
   async cancel(a: Approval): Promise<void> {
-    await this.db.approvals.update(a.id, { status: 'cancelled' }, { log: 'Погодження скасовано' });
+    await this.db.approvals.update(a.id, { status: 'cancelled' }, { log: L('Погодження скасовано', 'Approval request cancelled') });
   }
 
   /** Рішення за клієнта (погодив телефоном) */
@@ -177,6 +182,6 @@ export class ApprovalsService {
     const works = o.works.map((w) => (w.id === lineId ? { ...w, decision } : w));
     let parts = o.parts.map((p) => (p.id === lineId ? { ...p, decision } : p));
     if (o.status !== 'zapys') parts = await this.stock.reserveParts(o, parts);
-    await this.db.orders.update(o.id, { works, parts }, { log: `${o.number}: рішення клієнта телефоном` });
+    await this.db.orders.update(o.id, { works, parts }, { log: L(`${o.number}: рішення клієнта телефоном`, `${o.number}: customer decision by phone`) });
   }
 }

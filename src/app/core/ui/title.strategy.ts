@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
+import { BRAND, L } from '../i18n';
 
 /**
  * Заголовок вкладки «Розділ — Торк» і robots: індексується лише головна,
@@ -13,7 +14,7 @@ export class TorkTitleStrategy extends TitleStrategy {
 
   override updateTitle(state: RouterStateSnapshot): void {
     const t = this.buildTitle(state);
-    this.title.setTitle(t ? `${t} — Торк` : 'Торк — CRM для мережі СТО');
+    this.title.setTitle(t ? `${t} — ${BRAND}` : L('Торк — CRM для мережі СТО', 'Tork — CRM for a car service chain'));
     const path = state.url.split(/[?#]/)[0];
     if (path === '/' || path === '') this.meta.removeTag('name="robots"');
     else this.meta.updateTag({ name: 'robots', content: 'noindex, nofollow' });
@@ -21,6 +22,6 @@ export class TorkTitleStrategy extends TitleStrategy {
 
   /** Динамічний заголовок (наряд №, ім’я клієнта) після завантаження даних */
   set(text: string): void {
-    this.title.setTitle(`${text} — Торк`);
+    this.title.setTitle(`${text} — ${BRAND}`);
   }
 }

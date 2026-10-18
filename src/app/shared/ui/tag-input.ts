@@ -3,6 +3,7 @@ import { Icon } from './icon';
 import { I } from '../icons';
 import { Combobox } from './combobox';
 import { Option } from './option';
+import { L } from '../../core/i18n';
 
 /** Теги: чипи з видаленням + автодоповнення з існуючих і створення нового */
 @Component({
@@ -12,11 +13,11 @@ import { Option } from './option';
   host: { class: 'flex flex-col gap-2' },
   template: `
     @if (tags().length) {
-      <ul class="m-0 flex list-none flex-wrap gap-1.5 p-0" aria-label="Обрані теги">
+      <ul class="m-0 flex list-none flex-wrap gap-1.5 p-0" [attr.aria-label]="L('Обрані теги', 'Selected tags')">
         @for (t of tags(); track t) {
           <li class="chip pr-0.5">
             <svg [lucideIcon]="I.tag" [size]="12" aria-hidden="true"></svg>{{ t }}
-            <button type="button" class="grid size-5 place-items-center rounded text-ink-3 hover:bg-muted hover:text-ink" [attr.aria-label]="'Прибрати тег ' + t" (click)="remove(t)">
+            <button type="button" class="grid size-5 place-items-center rounded text-ink-3 hover:bg-muted hover:text-ink" [attr.aria-label]="L('Прибрати тег ', 'Remove tag ') + t" (click)="remove(t)">
               <svg [lucideIcon]="I.x" [size]="12" aria-hidden="true"></svg>
             </button>
           </li>
@@ -29,16 +30,17 @@ import { Option } from './option';
       [resetOnPick]="true"
       [icon]="I.tag"
       size="sm"
-      placeholder="Додати тег…"
-      emptyHint="Почніть вводити назву тегу"
-      createLabel="Створити тег"
-      ariaLabel="Додати тег"
+      [placeholder]="L('Додати тег…', 'Add a tag…')"
+      [emptyHint]="L('Почніть вводити назву тегу', 'Start typing a tag name')"
+      [createLabel]="L('Створити тег', 'Create tag')"
+      [ariaLabel]="L('Додати тег', 'Add a tag')"
       (selected)="add($event.value)"
       (create)="add($event)"
     />
   `,
 })
 export class TagInput {
+  protected readonly L = L;
   protected readonly I = I;
   readonly tags = model<string[]>([]);
   readonly suggestions = input<string[]>([]);

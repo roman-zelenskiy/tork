@@ -17,6 +17,7 @@ import { statusBg, statusColor } from '../../shared/ui/status';
 import { fmtDateShort, fmtMoney, fmtTime, sameDay, addDays, startOfDay } from '../../shared/format';
 import { OrdersHeader } from './orders-header';
 import { StatusMove } from './status-move';
+import { L } from '../../core/i18n';
 
 interface Col {
   status: OrderStatus;
@@ -36,9 +37,9 @@ interface Col {
   template: `
     <tk-orders-header />
     <div class="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-ink-2">
-      <tk-switch [(checked)]="showCancelled">Показувати скасовані</tk-switch>
+      <tk-switch [(checked)]="showCancelled">{{ L('Показувати скасовані', 'Show cancelled') }}</tk-switch>
       <span class="hidden items-center gap-1.5 md:inline-flex">
-        <svg [lucideIcon]="I.keyboard" [size]="14" aria-hidden="true"></svg>Перетягніть картку або натисніть <span class="kbd">Alt</span>+<span class="kbd">→</span> на картці у фокусі
+        <svg [lucideIcon]="I.keyboard" [size]="14" aria-hidden="true"></svg>{{ L('Перетягніть картку або натисніть', 'Drag a card or press') }} <span class="kbd">Alt</span>+<span class="kbd">→</span> {{ L('на картці у фокусі', 'on the focused card') }}
       </span>
     </div>
 
@@ -68,7 +69,7 @@ interface Col {
               <header class="flex items-center gap-2 px-3 pt-3 pb-2">
                 <span class="size-2 rounded-full" [style.background]="color(col.status)" aria-hidden="true"></span>
                 <h2 class="m-0 flex-1 text-[13px] font-semibold" [id]="'col-' + col.status">{{ col.label }}</h2>
-                <span class="text-xs text-ink-3 num" [attr.aria-label]="col.items.length + ' нарядів'">{{ col.items.length }}</span>
+                <span class="text-xs text-ink-3 num" [attr.aria-label]="col.items.length + L(' нарядів', ' work orders')">{{ col.items.length }}</span>
               </header>
               <div class="flex min-h-16 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2" >
                 @for (o of col.items; track o.id) {
@@ -95,7 +96,7 @@ interface Col {
                         class="btn btn-ghost btn-icon btn-sm ml-auto -mr-1 opacity-60 group-hover:opacity-100 focus-visible:opacity-100"
                         [cdkMenuTriggerFor]="moveMenu"
                         [cdkMenuTriggerData]="{ $implicit: o }"
-                        [attr.aria-label]="'Змінити статус ' + o.number"
+                        [attr.aria-label]="L('Змінити статус ', 'Change status of ') + o.number"
                         (mousedown)="$event.stopPropagation()"
                       >
                         <svg [lucideIcon]="I.more" aria-hidden="true"></svg>
@@ -110,17 +111,17 @@ interface Col {
                         <tk-avatar [name]="m" [size]="22" [tkTip]="m" />
                       }
                       @if (waiting(o)) {
-                        <span class="badge badge-accent h-5! text-[11px]!"><svg [lucideIcon]="I.message" [size]="12" aria-hidden="true"></svg>чекає клієнта</span>
+                        <span class="badge badge-accent h-5! text-[11px]!"><svg [lucideIcon]="I.message" [size]="12" aria-hidden="true"></svg>{{ L('чекає клієнта', 'awaiting customer') }}</span>
                       }
                       <span class="ml-auto text-[13px] font-medium num">{{ money(total(o)) }}</span>
                     </div>
                     <div *cdkDragPlaceholder class="min-h-[96px] rounded-xl border-2 border-dashed border-accent bg-accent-soft"></div>
                   </article>
                 } @empty {
-                  <p class="m-0 rounded-lg border border-dashed border-line-strong p-4 text-center text-xs text-ink-3">Немає нарядів</p>
+                  <p class="m-0 rounded-lg border border-dashed border-line-strong p-4 text-center text-xs text-ink-3">{{ L('Немає нарядів', 'No work orders') }}</p>
                 }
                 @if (col.hidden) {
-                  <a routerLink="/naryady" class="link px-1 text-xs">Ще {{ col.hidden }} у таблиці</a>
+                  <a routerLink="/naryady" class="link px-1 text-xs">{{ L('Ще ' + col.hidden + ' у таблиці', col.hidden + ' more in the table') }}</a>
                 }
               </div>
             </section>
@@ -131,7 +132,7 @@ interface Col {
 
     <ng-template #moveMenu let-o>
       <div class="menu w-60" cdkMenu>
-        <div class="menu-label">Перемістити {{ o.number }}</div>
+        <div class="menu-label">{{ L('Перемістити', 'Move') }} {{ o.number }}</div>
         @for (s of allStatuses; track s) {
           <button type="button" class="menu-item" cdkMenuItem [cdkMenuItemDisabled]="!allowed(o, s)" (cdkMenuItemTriggered)="moveTo(o, s)">
             <span class="size-2 rounded-full" [style.background]="color(s)" aria-hidden="true"></span>{{ label(s) }}
@@ -146,6 +147,7 @@ interface Col {
   `,
 })
 export class Kanban {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly db = inject(DbService);
   private readonly stats = inject(StatsService);
@@ -221,14 +223,14 @@ export class Kanban {
   }
   protected worksText(o: Order): string {
     const w = o.works.filter((x) => x.decision !== 'declined');
-    return w.length ? w.map((x) => x.name).join(', ') : o.complaint || 'Роботи не додано';
+    return w.length ? w.map((x) => x.name).join(', ') : o.complaint || L('Роботи не додано', 'No jobs added');
   }
   protected when(o: Order): string {
     const d = new Date(o.start!);
     const today = startOfDay(new Date());
     if (sameDay(d, today)) return fmtTime(d);
-    if (sameDay(d, addDays(today, 1))) return `завтра ${fmtTime(d)}`;
-    if (sameDay(d, addDays(today, -1))) return `вчора ${fmtTime(d)}`;
+    if (sameDay(d, addDays(today, 1))) return `${L('завтра', 'tomorrow')} ${fmtTime(d)}`;
+    if (sameDay(d, addDays(today, -1))) return `${L('вчора', 'yesterday')} ${fmtTime(d)}`;
     return `${fmtDateShort(d)} ${fmtTime(d)}`;
   }
 
@@ -245,7 +247,7 @@ export class Kanban {
   protected async moveTo(o: Order, to: OrderStatus): Promise<void> {
     if (o.status === to) return;
     const ok = await this.mover.move(o, to);
-    if (ok) this.announce.set(`${o.number} переміщено в «${STATUS_LABEL[to]}»`);
+    if (ok) this.announce.set(L(`${o.number} переміщено в «${STATUS_LABEL[to]}»`, `${o.number} moved to “${STATUS_LABEL[to]}”`));
   }
 
   protected step(o: Order, dir: 1 | -1): void {

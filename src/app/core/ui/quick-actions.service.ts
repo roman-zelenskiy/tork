@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Dialogs } from './dialogs.service';
+import { L } from '../i18n';
 
 /**
  * Швидкі дії з будь-якого місця (палітра, топбар, гарячі клавіші).
@@ -13,7 +14,7 @@ export class QuickActions {
 
   async newOrder(prefill: { clientId?: string; carId?: string; postId?: string; start?: string } = {}): Promise<void> {
     const { OrderCreateDialog } = await import('../../features/orders/order-create');
-    const ref = this.dialogs.open(OrderCreateDialog, prefill, { size: 'lg', label: 'Новий наряд' });
+    const ref = this.dialogs.open(OrderCreateDialog, prefill, { size: 'lg', label: L('Новий наряд', 'New work order') });
     ref.closed.subscribe((id) => {
       if (typeof id === 'string') void this.router.navigate(['/naryady', id]);
     });
@@ -21,7 +22,7 @@ export class QuickActions {
 
   async newClient(): Promise<void> {
     const { ClientForm } = await import('../../features/clients/client-form');
-    const ref = this.dialogs.open(ClientForm, {}, { drawer: true, label: 'Новий клієнт' });
+    const ref = this.dialogs.open(ClientForm, {}, { drawer: true, label: L('Новий клієнт', 'New customer') });
     ref.closed.subscribe((id) => {
       if (typeof id === 'string') void this.router.navigate(['/kliyenty', id]);
     });

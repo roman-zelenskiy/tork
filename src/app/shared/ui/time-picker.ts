@@ -3,6 +3,7 @@ import { Select } from './select';
 import { Option } from './option';
 import { minToHHMM, toMin } from '../format';
 import { I } from '../icons';
+import { L } from '../../core/i18n';
 
 /** Вибір часу з кроком (за замовчуванням 15 хв) у межах робочого дня. Значення — «HH:MM» */
 @Component({
@@ -35,7 +36,7 @@ export class TimePicker {
   readonly step = input(15);
   /** Зайняті слоти позначаються підказкою */
   readonly busy = input<string[]>([]);
-  readonly placeholder = input('Час');
+  readonly placeholder = input(L('Час', 'Time'));
   readonly invalid = input(false);
   readonly disabled = input(false);
   readonly size = input<'sm' | 'md'>('md');
@@ -49,7 +50,7 @@ export class TimePicker {
     const busy = new Set(this.busy());
     for (let m = toMin(this.from()); m <= toMin(this.to()); m += this.step()) {
       const v = minToHHMM(m);
-      out.push({ value: v, label: v, mono: true, hint: busy.has(v) ? 'зайнято' : undefined });
+      out.push({ value: v, label: v, mono: true, hint: busy.has(v) ? L('зайнято', 'taken') : undefined });
     }
     return out;
   });

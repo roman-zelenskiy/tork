@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { DbService } from '../data/db.service';
 import { Order } from '../data/models';
 import { toMin, ymd } from '../../shared/format';
+import { L } from '../i18n';
 
 export interface Slot {
   postId: string | null;
@@ -32,17 +33,17 @@ export class ScheduleService {
     const out: Conflict[] = [];
     const start = Date.parse(s.start);
     const end = start + s.durationMin * MIN;
-    if (start < Date.now() - 5 * MIN && !s.orderId) out.push({ kind: 'past', text: 'Цей час уже минув — перевірте дату' });
+    if (start < Date.now() - 5 * MIN && !s.orderId) out.push({ kind: 'past', text: L('Цей час уже минув — перевірте дату', 'This time has already passed — check the date') });
     const post = this.db.posts.get(s.postId);
     const branch = this.db.branches.get(post?.branchId);
     if (branch) {
       const d = new Date(start);
       const dow = d.getDay() || 7;
-      if (!branch.workDays.includes(dow)) out.push({ kind: 'dayoff', text: `${branch.name} у цей день не працює` });
+      if (!branch.workDays.includes(dow)) out.push({ kind: 'dayoff', text: L(`${branch.name} у цей день не працює`, `${branch.name} is closed on this day`) });
       else {
         const sm = d.getHours() * 60 + d.getMinutes();
         if (sm < toMin(branch.opensAt) || sm + s.durationMin > toMin(branch.closesAt))
-          out.push({ kind: 'hours', text: `Поза робочим часом (${branch.opensAt}–${branch.closesAt})` });
+          out.push({ kind: 'hours', text: L(`Поза робочим часом (${branch.opensAt}–${branch.closesAt})`, `Outside opening hours (${branch.opensAt}–${branch.closesAt})`) });
       }
     }
     for (const o of this.db.orders.items()) {
@@ -50,10 +51,10 @@ export class ScheduleService {
       const os = Date.parse(o.start!);
       const oe = os + o.durationMin * MIN;
       if (os >= end || oe <= start) continue;
-      if (o.postId === s.postId) out.push({ kind: 'overlap', text: `Пост зайнятий нарядом ${o.number} (${this.hhmm(os)}–${this.hhmm(oe)})`, orderId: o.id });
+      if (o.postId === s.postId) out.push({ kind: 'overlap', text: L(`Пост зайнятий нарядом ${o.number} (${this.hhmm(os)}–${this.hhmm(oe)})`, `The bay is taken by ${o.number} (${this.hhmm(os)}–${this.hhmm(oe)})`), orderId: o.id });
       else if (s.mechanicId && o.mechanicId === s.mechanicId) {
         const m = this.db.employees.get(s.mechanicId);
-        out.push({ kind: 'mechanic', text: `${m?.name ?? 'Механік'} у цей час на іншому пості (${o.number})`, orderId: o.id });
+        out.push({ kind: 'mechanic', text: L(`${m?.name ?? 'Механік'} у цей час на іншому пості (${o.number})`, `${m?.name ?? 'The mechanic'} is on another bay at this time (${o.number})`), orderId: o.id });
       }
     }
     return out;

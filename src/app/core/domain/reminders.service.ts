@@ -4,8 +4,9 @@ import { Car, Channel, Client, MessageTemplate, Reminder, ReminderRule } from '.
 import { formatPlate } from '../data/plates';
 import { StatsService } from './stats.service';
 import { firstName, renderTemplate } from './messages';
-import { fmtDate } from '../../shared/format';
+import { fmtDate, fmtNum } from '../../shared/format';
 import { appUrlShort } from '../../shared/app-url';
+import { L } from '../i18n';
 
 export interface DueItem {
   key: string;
@@ -86,7 +87,7 @@ export class RemindersService {
           if (!inSeason || recent || (!lastAt && !orders.length)) continue;
           if (!lastAt) continue;
           dueDate = now;
-          reason = 'Сезон';
+          reason = L('Сезон', 'Season');
         } else {
           if (!lastAt || !last) continue;
           if (rule.everyMonths) dueDate = lastAt + rule.everyMonths * 30.4 * DAY;
@@ -99,7 +100,9 @@ export class RemindersService {
             const kmDate = lastAt + (rule.everyKm / this.kmPerDay(car)) * DAY;
             dueDate = dueDate ? Math.min(dueDate, kmDate) : kmDate;
           }
-          reason = byKm ? `Пробіг ~${forecast.toLocaleString('uk-UA')} км із ${dueKm!.toLocaleString('uk-UA')}` : `Минуло ${rule.everyMonths} міс.`;
+          reason = byKm
+            ? L(`Пробіг ~${fmtNum(forecast)} км із ${fmtNum(dueKm!)}`, `Mileage ~${fmtNum(forecast)} km of ${fmtNum(dueKm!)}`)
+            : L(`Минуло ${rule.everyMonths} міс.`, `${rule.everyMonths} months passed`);
         }
         out.push({
           key: `${rule.id}|${car.id}`,
@@ -136,7 +139,7 @@ export class RemindersService {
         forecastKm: this.forecastKm(car, now),
         amount: r.amount,
         overdue: !!r.dueDate && Date.parse(r.dueDate) < now,
-        reason: `Відмова в наряді ${this.db.orders.get(r.orderId)?.number ?? ''}`.trim(),
+        reason: L(`Відмова в наряді ${this.db.orders.get(r.orderId)?.number ?? ''}`, `Declined in ${this.db.orders.get(r.orderId)?.number ?? 'a work order'}`).trim(),
       });
     }
     return out.sort((a, b) => (a.dueDate ?? '9').localeCompare(b.dueDate ?? '9'));
@@ -158,7 +161,7 @@ export class RemindersService {
   async send(items: DueItem[], tpl: MessageTemplate | null, text: string, channel: Channel, title: string): Promise<number> {
     const ok = items.filter((i) => i.client.allowMessages);
     const recipients = ok.map((i) => ({ clientId: i.client.id, carId: i.car.id, phone: i.client.phone, text: this.render({ text }, i) }));
-    await this.db.mailings.create({ templateId: tpl?.id ?? null, channel, title, recipients }, { action: 'message', log: `Розсилка «${title}»: ${recipients.length} отримувачів` });
+    await this.db.mailings.create({ templateId: tpl?.id ?? null, channel, title, recipients }, { action: 'message', log: L(`Розсилка «${title}»: ${recipients.length} отримувачів`, `Mailing “${title}”: ${recipients.length} recipients`) });
     for (const i of ok) await this.mark(i, 'sent');
     return recipients.length;
   }
@@ -176,11 +179,14 @@ export class RemindersService {
 
   ruleText(r: ReminderRule): string {
     const parts: string[] = [];
-    if (r.everyKm) parts.push(`кожні ${r.everyKm.toLocaleString('uk-UA')} км`);
-    if (r.everyMonths) parts.push(`${r.everyKm ? 'або ' : 'кожні '}${r.everyMonths} міс.`);
-    if (r.seasonMonths.length) parts.push(`сезон: ${r.seasonMonths.map((m) => MONTHS[m - 1]).join(', ')}`);
-    return parts.join(' ') || 'без умов';
+    if (r.everyKm) parts.push(L(`кожні ${fmtNum(r.everyKm)} км`, `every ${fmtNum(r.everyKm)} km`));
+    if (r.everyMonths) parts.push(r.everyKm ? L(`або ${r.everyMonths} міс.`, `or ${r.everyMonths} months`) : L(`кожні ${r.everyMonths} міс.`, `every ${r.everyMonths} months`));
+    if (r.seasonMonths.length) parts.push(L('сезон: ', 'season: ') + r.seasonMonths.map((m) => MONTHS[m - 1]).join(', '));
+    return parts.join(' ') || L('без умов', 'no conditions');
   }
 }
 
-export const MONTHS = ['січ', 'лют', 'бер', 'квіт', 'трав', 'черв', 'лип', 'серп', 'вер', 'жовт', 'лист', 'груд'];
+export const MONTHS = L(
+  ['січ', 'лют', 'бер', 'квіт', 'трав', 'черв', 'лип', 'серп', 'вер', 'жовт', 'лист', 'груд'],
+  ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+);

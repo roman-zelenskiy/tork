@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, model, output, signal } from '@angular/core';
 import { Icon } from './icon';
 import { I } from '../icons';
+import { L } from '../../core/i18n';
 
 /** Числове поле з кнопками −/+ (без нативного type=number). Стрілки ↑↓ змінюють на крок */
 @Component({
@@ -13,7 +14,7 @@ import { I } from '../icons';
       <button
         type="button"
         class="grid size-7 flex-none place-items-center rounded-md text-ink-2 hover:bg-subtle hover:text-ink active:scale-95 disabled:opacity-40"
-        [attr.aria-label]="'Зменшити на ' + step()"
+        [attr.aria-label]="L('Зменшити на ', 'Decrease by ') + step()"
         tabindex="-1"
         [disabled]="disabled() || value() <= min()"
         (click)="bump(-1)"
@@ -45,7 +46,7 @@ import { I } from '../icons';
       <button
         type="button"
         class="grid size-7 flex-none place-items-center rounded-md text-ink-2 hover:bg-subtle hover:text-ink active:scale-95 disabled:opacity-40"
-        [attr.aria-label]="'Збільшити на ' + step()"
+        [attr.aria-label]="L('Збільшити на ', 'Increase by ') + step()"
         tabindex="-1"
         [disabled]="disabled() || value() >= max()"
         (click)="bump(1)"
@@ -56,6 +57,7 @@ import { I } from '../icons';
   `,
 })
 export class Stepper {
+  protected readonly L = L;
   protected readonly I = I;
   readonly value = model(0);
   readonly min = input(0);

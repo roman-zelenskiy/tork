@@ -10,6 +10,7 @@ import { DateRange, DateRangePicker, PERIOD_PRESETS } from '../../shared/ui/date
 import { Chart, ChartPalette, baseOption } from '../../shared/chart/chart';
 import { fmtHours, fmtMoney, fmtPct } from '../../shared/format';
 import { MechanicsHeader } from './mechanics-header';
+import { L } from '../../core/i18n';
 
 /** Механіки філії: що роблять зараз, закриті нормо-години й ефективність за період */
 @Component({
@@ -23,11 +24,11 @@ import { MechanicsHeader } from './mechanics-header';
     @if (!db.ready()) {
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">@for (i of [1, 2, 3]; track i) {<div class="skeleton h-44"></div>}</div>
     } @else if (!rows().length) {
-      <div class="card"><tk-empty art="clients" title="Механіків немає" text="Додайте співробітників з роллю «Механік» у довіднику."><a routerLink="/dovidnyky/spivrobitnyky" class="btn">До довідника</a></tk-empty></div>
+      <div class="card"><tk-empty art="clients" [title]="L('Механіків немає', 'No mechanics')" [text]="L('Додайте співробітників з роллю «Механік» у довіднику.', 'Add staff with the “Mechanic” role in Directories.')"><a routerLink="/dovidnyky/spivrobitnyky" class="btn">{{ L('До довідника', 'To Directories') }}</a></tk-empty></div>
     } @else {
       <section class="card mb-5 p-4" aria-labelledby="eff-h">
-        <h2 id="eff-h" class="m-0 mb-1 text-[15px] font-semibold">Закриті нормо-години</h2>
-        <p class="m-0 mb-3 text-xs text-ink-3">Ефективність на картках = нормативний час ÷ фактичний; понад 100% — швидше за норматив.</p>
+        <h2 id="eff-h" class="m-0 mb-1 text-[15px] font-semibold">{{ L('Закриті нормо-години', 'Standard hours closed') }}</h2>
+        <p class="m-0 mb-3 text-xs text-ink-3">{{ L('Ефективність на картках = нормативний час ÷ фактичний; понад 100% — швидше за норматив.', 'Card efficiency = standard time ÷ actual time; over 100% means faster than standard.') }}</p>
         <tk-chart [build]="chart" [height]="260" [label]="chartLabel()" />
       </section>
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -42,19 +43,19 @@ import { MechanicsHeader } from './mechanics-header';
             </div>
             <div class="mt-3 rounded-lg px-3 py-2 text-[13px]" [class]="r.running ? 'bg-accent-soft text-accent-ink' : 'bg-subtle text-ink-2'">
               @if (r.running; as run) {
-                <span class="flex items-center gap-2"><span class="size-2 animate-pulse rounded-full bg-accent" aria-hidden="true"></span>Зараз: {{ run.work.name }}</span>
+                <span class="flex items-center gap-2"><span class="size-2 animate-pulse rounded-full bg-accent" aria-hidden="true"></span>{{ L('Зараз', 'Now') }}: {{ run.work.name }}</span>
                 <a [routerLink]="['/naryady', run.order.id]" class="mono text-xs underline underline-offset-2">{{ run.order.number }}</a>
               } @else {
-                {{ r.queue ? 'У черзі ' + r.queue + ' робіт' : 'Вільний' }}
+                {{ r.queue ? L('У черзі ' + r.queue + ' робіт', r.queue + ' jobs queued') : L('Вільний', 'Free') }}
               }
             </div>
             <dl class="mt-3 grid grid-cols-3 gap-2 text-center">
-              <div><dt class="text-[11px] text-ink-3">Нормо-год</dt><dd class="m-0 font-semibold num">{{ hours(r.s.normHours) }}</dd></div>
-              <div><dt class="text-[11px] text-ink-3">Робіт</dt><dd class="m-0 font-semibold num">{{ r.s.works }}</dd></div>
-              <div><dt class="text-[11px] text-ink-3">Ефективність</dt><dd class="m-0 font-semibold num" [class.text-success]="(r.s.efficiency ?? 0) >= 100" [class.text-danger]="(r.s.efficiency ?? 100) < 80">{{ r.s.efficiency !== null ? pct(r.s.efficiency) : '—' }}</dd></div>
+              <div><dt class="text-[11px] text-ink-3">{{ L('Нормо-год', 'Std hrs') }}</dt><dd class="m-0 font-semibold num">{{ hours(r.s.normHours) }}</dd></div>
+              <div><dt class="text-[11px] text-ink-3">{{ L('Робіт', 'Jobs') }}</dt><dd class="m-0 font-semibold num">{{ r.s.works }}</dd></div>
+              <div><dt class="text-[11px] text-ink-3">{{ L('Ефективність', 'Efficiency') }}</dt><dd class="m-0 font-semibold num" [class.text-success]="(r.s.efficiency ?? 0) >= 100" [class.text-danger]="(r.s.efficiency ?? 100) < 80">{{ r.s.efficiency !== null ? pct(r.s.efficiency) : '—' }}</dd></div>
             </dl>
             <div class="mt-3 flex items-center justify-between border-t border-line pt-3 text-[13px]">
-              <span class="text-ink-2">Виручка робіт</span><span class="font-medium num">{{ money(r.s.revenue) }}</span>
+              <span class="text-ink-2">{{ L('Виручка робіт', 'Labour revenue') }}</span><span class="font-medium num">{{ money(r.s.revenue) }}</span>
             </div>
           </article>
         }
@@ -63,6 +64,7 @@ import { MechanicsHeader } from './mechanics-header';
   `,
 })
 export class MechanicsPage {
+  protected readonly L = L;
   protected readonly db = inject(DbService);
   protected readonly ctx = inject(AppContext);
   private readonly mech = inject(MechanicsService);
@@ -81,12 +83,12 @@ export class MechanicsPage {
       s: this.mech.stats(m.id, from, to),
       running: this.mech.running(m.id),
       queue: this.mech.myWorks(m.id).reduce((n, x) => n + x.works.filter((w) => w.state !== 'done').length, 0),
-      skills: m.skills.map((s) => cats.get(s)).filter(Boolean).slice(0, 3).join(', ') || 'універсал',
+      skills: m.skills.map((s) => cats.get(s)).filter(Boolean).slice(0, 3).join(', ') || L('універсал', 'all-rounder'),
     }));
   });
 
   protected readonly chartLabel = computed(() =>
-    'Нормо-години за період: ' + this.rows().map((r) => `${r.m.name} ${fmtHours(r.s.normHours)}`).join(', '),
+    L('Нормо-години за період: ', 'Standard hours for the period: ') + this.rows().map((r) => `${r.m.name} ${fmtHours(r.s.normHours)}`).join(', '),
   );
 
   protected readonly chart = (p: ChartPalette): EChartsCoreOption => {
@@ -97,9 +99,9 @@ export class MechanicsPage {
       grid: { left: 8, right: 8, top: 28, bottom: 4, containLabel: true },
             tooltip: { ...(baseOption(p)['tooltip'] as object), trigger: 'axis' },
       xAxis: { type: 'category', data: names, axisLine: { lineStyle: { color: p.line } }, axisLabel: { color: p.text2 }, axisTick: { show: false } },
-      yAxis: { type: 'value', name: 'нормо-години', nameTextStyle: { color: p.text3, align: 'left' }, axisLabel: { color: p.text3 }, splitLine: { lineStyle: { color: p.line, type: 'dashed' } } },
+      yAxis: { type: 'value', name: L('нормо-години', 'standard hours'), nameTextStyle: { color: p.text3, align: 'left' }, axisLabel: { color: p.text3 }, splitLine: { lineStyle: { color: p.line, type: 'dashed' } } },
       series: [
-        { name: 'Нормо-години', type: 'bar', barMaxWidth: 28, itemStyle: { color: p.accent, borderRadius: [4, 4, 0, 0] }, label: { show: true, position: 'top', color: p.text2, fontSize: 11 }, data: rows.map((r) => Math.round(r.s.normHours * 10) / 10) },
+        { name: L('Нормо-години', 'Standard hours'), type: 'bar', barMaxWidth: 28, itemStyle: { color: p.accent, borderRadius: [4, 4, 0, 0] }, label: { show: true, position: 'top', color: p.text2, fontSize: 11 }, data: rows.map((r) => Math.round(r.s.normHours * 10) / 10) },
       ],
     };
   };

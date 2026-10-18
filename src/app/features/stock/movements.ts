@@ -12,14 +12,15 @@ import { Option, norm } from '../../shared/ui/option';
 import { fmtDateTime } from '../../shared/format';
 import { downloadFile } from '../../shared/download';
 import { StockHeader } from './stock-header';
+import { BRAND, L } from '../../core/i18n';
 
 export const MV_LABEL: Record<MovementType, string> = {
-  in: 'Надходження',
-  out: 'Видано в наряд',
-  transfer: 'Переміщення',
-  reserve: 'Резерв',
-  release: 'Знято резерв',
-  writeoff: 'Списання',
+  in: L('Надходження', 'Receipt'),
+  out: L('Видано в наряд', 'Issued to work order'),
+  transfer: L('Переміщення', 'Transfer'),
+  reserve: L('Резерв', 'Reserved'),
+  release: L('Знято резерв', 'Released'),
+  writeoff: L('Списання', 'Write-off'),
 };
 const MV_TONE: Record<MovementType, string> = {
   in: 'badge-success',
@@ -38,24 +39,24 @@ const MV_TONE: Record<MovementType, string> = {
   template: `
     <tk-stock-header />
     <div class="mb-3 flex flex-wrap items-center gap-2">
-      <tk-text-field class="w-full sm:w-64" size="sm" type="search" [icon]="I.search" placeholder="Артикул, наряд, коментар…" ariaLabel="Пошук у журналі" [clearable]="true" [(value)]="query" />
-      <tk-select class="w-[calc(50%-4px)] sm:w-48" size="sm" [multiple]="true" [options]="typeOptions" placeholder="Операція" ariaLabel="Тип операції" [(values)]="types" />
-      <tk-select class="w-[calc(50%-4px)] sm:w-48" size="sm" [options]="branchOptions()" placeholder="Усі філії" ariaLabel="Філія" [clearable]="true" [(value)]="branch" />
-      <button type="button" class="btn btn-sm btn-icon ml-auto" aria-label="Експорт у CSV" [disabled]="!rows().length" (click)="csv()"><svg [lucideIcon]="I.download" aria-hidden="true"></svg></button>
+      <tk-text-field class="w-full sm:w-64" size="sm" type="search" [icon]="I.search" [placeholder]="L('Артикул, наряд, коментар…', 'SKU, work order, comment…')" [ariaLabel]="L('Пошук у журналі', 'Search the log')" [clearable]="true" [(value)]="query" />
+      <tk-select class="w-[calc(50%-4px)] sm:w-48" size="sm" [multiple]="true" [options]="typeOptions" [placeholder]="L('Операція', 'Operation')" [ariaLabel]="L('Тип операції', 'Operation type')" [(values)]="types" />
+      <tk-select class="w-[calc(50%-4px)] sm:w-48" size="sm" [options]="branchOptions()" [placeholder]="L('Усі філії', 'All branches')" [ariaLabel]="L('Філія', 'Branch')" [clearable]="true" [(value)]="branch" />
+      <button type="button" class="btn btn-sm btn-icon ml-auto" [attr.aria-label]="L('Експорт у CSV', 'Export to CSV')" [disabled]="!rows().length" (click)="csv()"><svg [lucideIcon]="I.download" aria-hidden="true"></svg></button>
     </div>
 
-    <div class="card overflow-hidden" role="table" aria-label="Журнал рухів складу" [attr.aria-rowcount]="rows().length">
+    <div class="card overflow-hidden" role="table" [attr.aria-label]="L('Журнал рухів складу', 'Stock movement log')" [attr.aria-rowcount]="rows().length">
       <div class="hidden grid-cols-[150px_150px_minmax(0,1fr)_80px_140px_minmax(0,1fr)] gap-3 border-b border-line bg-subtle px-4 py-2.5 text-xs font-medium text-ink-2 md:grid" role="row">
-        <span role="columnheader">Дата</span><span role="columnheader">Операція</span><span role="columnheader">Запчастина</span><span role="columnheader" class="text-right">К-сть</span><span role="columnheader">Філія</span><span role="columnheader">Підстава</span>
+        <span role="columnheader">{{ L('Дата', 'Date') }}</span><span role="columnheader">{{ L('Операція', 'Operation') }}</span><span role="columnheader">{{ L('Запчастина', 'Part') }}</span><span role="columnheader" class="text-right">{{ L('К-сть', 'Qty') }}</span><span role="columnheader">{{ L('Філія', 'Branch') }}</span><span role="columnheader">{{ L('Підстава', 'Reference') }}</span>
       </div>
       @if (!db.ready()) {
         @for (i of [1, 2, 3, 4, 5, 6]; track i) {
           <div class="flex h-12 items-center gap-4 border-b border-line px-4"><div class="skeleton h-3 w-28"></div><div class="skeleton h-3 flex-1"></div></div>
         }
       } @else if (!rows().length) {
-        <tk-empty art="stock" title="Рухів не знайдено" text="Змініть фільтри або пошуковий запит." />
+        <tk-empty art="stock" [title]="L('Рухів не знайдено', 'No movements found')" [text]="L('Змініть фільтри або пошуковий запит.', 'Change the filters or search.')" />
       } @else {
-        <cdk-virtual-scroll-viewport itemSize="52" class="h-[min(640px,calc(100dvh-280px))]" tabindex="0" role="rowgroup" aria-label="Записи журналу рухів">
+        <cdk-virtual-scroll-viewport itemSize="52" class="h-[min(640px,calc(100dvh-280px))]" tabindex="0" role="rowgroup" [attr.aria-label]="L('Записи журналу рухів', 'Movement log entries')">
           <div
             *cdkVirtualFor="let m of rows(); trackBy: trackId"
             role="row"
@@ -80,10 +81,11 @@ const MV_TONE: Record<MovementType, string> = {
         </cdk-virtual-scroll-viewport>
       }
     </div>
-    <p class="mt-2 text-xs text-ink-3 num">{{ rows().length }} записів</p>
+    <p class="mt-2 text-xs text-ink-3 num">{{ rows().length }} {{ L('записів', 'entries') }}</p>
   `,
 })
 export class Movements {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly db = inject(DbService);
   protected readonly dt = fmtDateTime;
@@ -112,7 +114,7 @@ export class Movements {
     return this.db.parts.get(id);
   }
   protected branchName(id: string): string {
-    return this.db.branches.get(id)?.name.replace('Торк ', '') ?? '—';
+    return this.db.branches.get(id)?.name.replace(`${BRAND} `, '') ?? '—';
   }
   protected label(t: MovementType): string {
     return MV_LABEL[t];
@@ -124,7 +126,7 @@ export class Movements {
     return m.type === 'in' ? 1 : m.type === 'out' || m.type === 'writeoff' ? -1 : 0;
   }
   protected csv(): void {
-    const lines = ['Дата;Операція;Артикул;Назва;Кількість;Філія;Підстава'];
+    const lines = [L('Дата;Операція;Артикул;Назва;Кількість;Філія;Підстава', 'Date;Operation;SKU;Name;Quantity;Branch;Reference')];
     for (const m of this.rows()) {
       const p = this.part(m.partId);
       lines.push([m.createdAt.slice(0, 16).replace('T', ' '), MV_LABEL[m.type], p?.sku ?? '', `"${p?.name ?? ''}"`, this.sign(m) * m.qty || m.qty, this.branchName(m.branchId), `"${m.note}"`].join(';'));

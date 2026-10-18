@@ -12,9 +12,13 @@ import { RadioGroup } from '../../shared/ui/checkbox';
 import { Option } from '../../shared/ui/option';
 import { fmtDate, fmtDateTime, fmtHours, fmtKm, fmtMoney, fmtPhone } from '../../shared/format';
 import { BodyDiagram } from '../intake/body-diagram';
+import { BRAND, L } from '../../core/i18n';
 
 type Form = 'naryad' | 'akt-pryiomu' | 'akt-robit';
-const TITLES: Record<Form, string> = { naryad: 'Замовлення-наряд', 'akt-pryiomu': 'Акт прийому-передачі автомобіля', 'akt-robit': 'Акт виконаних робіт' };
+const TITLES: Record<Form, string> = L(
+  { naryad: 'Замовлення-наряд', 'akt-pryiomu': 'Акт прийому-передачі автомобіля', 'akt-robit': 'Акт виконаних робіт' },
+  { naryad: 'Work order', 'akt-pryiomu': 'Vehicle intake report', 'akt-robit': 'Certificate of completed work' },
+);
 
 /** Друковані форми A4. Друк — системний діалог браузера (можна зберегти в PDF) */
 @Component({
@@ -25,41 +29,41 @@ const TITLES: Record<Form, string> = { naryad: 'Замовлення-наряд'
     @if (!db.ready()) {
       <div class="skeleton mx-auto h-[1000px] max-w-[794px]"></div>
     } @else if (!order()) {
-      <tk-empty art="orders" title="Наряд не знайдено"><a routerLink="/naryady" class="btn">До нарядів</a></tk-empty>
+      <tk-empty art="orders" [title]="L('Наряд не знайдено', 'Work order not found')"><a routerLink="/naryady" class="btn">{{ L('До нарядів', 'To work orders') }}</a></tk-empty>
     } @else {
       @let o = order()!;
       @let t = totals()!;
       <div class="no-print mx-auto mb-4 flex max-w-[794px] flex-wrap items-center gap-2">
         <a [routerLink]="['/naryady', o.id]" class="btn btn-ghost"><svg [lucideIcon]="I.arrowLeft" aria-hidden="true"></svg>{{ o.number }}</a>
-        <tk-radio-group variant="segmented" ariaLabel="Форма" [options]="forms" [value]="forma()" (changed)="setForm($event)" />
-        <button type="button" class="btn btn-primary ml-auto" (click)="print()"><svg [lucideIcon]="I.printer" aria-hidden="true"></svg>Друкувати</button>
+        <tk-radio-group variant="segmented" [ariaLabel]="L('Форма', 'Form')" [options]="forms" [value]="forma()" (changed)="setForm($event)" />
+        <button type="button" class="btn btn-primary ml-auto" (click)="print()"><svg [lucideIcon]="I.printer" aria-hidden="true"></svg>{{ L('Друкувати', 'Print') }}</button>
       </div>
 
       <div class="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0 print:overflow-visible">
       <article class="print-area paper mx-auto w-[794px] max-w-none bg-white p-10 sm:w-auto sm:max-w-[794px] text-[12.5px] leading-[1.5] text-[#1d1b17] shadow-pop sm:p-12">
         <header class="flex items-start justify-between gap-6 border-b-2 border-[#1d1b17] pb-4">
           <div>
-            <div class="text-lg font-bold">{{ s()?.serviceName ?? 'Торк' }}</div>
+            <div class="text-lg font-bold">{{ s()?.serviceName ?? brand }}</div>
             <div class="text-[11.5px] text-[#55504a]">{{ branch()?.name }}, {{ branch()?.address }}<br />{{ branch()?.phone }} · {{ s()?.email }}</div>
           </div>
           <div class="text-right">
             <h1 class="m-0 text-[15px] font-bold">{{ title() }}</h1>
             <div>№&nbsp;<span class="font-mono">{{ o.number }}</span></div>
-            <div class="text-[11.5px] text-[#55504a]">від {{ date(o.start ?? o.createdAt) }}</div>
+            <div class="text-[11.5px] text-[#55504a]">{{ L('від', 'dated') }} {{ date(o.start ?? o.createdAt) }}</div>
           </div>
         </header>
 
         <section class="mt-4 grid grid-cols-2 gap-6">
           <div>
-            <div class="pt-label">Замовник</div>
+            <div class="pt-label">{{ L('Замовник', 'Customer') }}</div>
             <div class="font-semibold">{{ client()?.name }}</div>
             <div>{{ phone(client()?.phone ?? '') }}</div>
           </div>
           <div>
-            <div class="pt-label">Автомобіль</div>
+            <div class="pt-label">{{ L('Автомобіль', 'Vehicle') }}</div>
             <div class="font-semibold">{{ car()?.make }} {{ car()?.model }}, {{ car()?.year }}</div>
-            <div>Держномер <span class="font-mono">{{ plate() }}</span>, VIN <span class="font-mono">{{ car()?.vin }}</span></div>
-            <div>Пробіг: {{ o.mileage ? km(o.mileage) : '—' }}</div>
+            <div>{{ L('Держномер', 'Number plate') }} <span class="font-mono">{{ plate() }}</span>, VIN <span class="font-mono">{{ car()?.vin }}</span></div>
+            <div>{{ L('Пробіг', 'Mileage') }}: {{ o.mileage ? km(o.mileage) : '—' }}</div>
           </div>
         </section>
 
@@ -68,7 +72,7 @@ const TITLES: Record<Form, string> = { naryad: 'Замовлення-наряд'
           <section class="mt-5 grid grid-cols-[220px_1fr] gap-6">
             <div><tk-body-diagram [damages]="a?.damages ?? []" [readonly]="true" /></div>
             <div>
-              <div class="pt-label">Пошкодження</div>
+              <div class="pt-label">{{ L('Пошкодження', 'Damage') }}</div>
               @if (a?.damages?.length) {
                 <ol class="m-0 pl-4">
                   @for (d of a!.damages; track d.id) {
@@ -76,28 +80,32 @@ const TITLES: Record<Form, string> = { naryad: 'Замовлення-наряд'
                   }
                 </ol>
               } @else {
-                <p class="m-0">Видимих пошкоджень не виявлено.</p>
+                <p class="m-0">{{ L('Видимих пошкоджень не виявлено.', 'No visible damage found.') }}</p>
               }
-              <div class="pt-label mt-4">Стан</div>
-              <p class="m-0">Пробіг {{ a ? km(a.mileage) : '______' }}, рівень пального {{ a ? a.fuel + '%' : '____' }}.</p>
-              <div class="pt-label mt-4">Комплектність</div>
+              <div class="pt-label mt-4">{{ L('Стан', 'Condition') }}</div>
+              <p class="m-0">{{ L('Пробіг', 'Mileage') }} {{ a ? km(a.mileage) : '______' }}, {{ L('рівень пального', 'fuel level') }} {{ a ? a.fuel + '%' : '____' }}.</p>
+              <div class="pt-label mt-4">{{ L('Комплектність', 'Contents') }}</div>
               <p class="m-0">
-                Документи {{ yn(a?.kit?.documents) }}, запасне колесо {{ yn(a?.kit?.spare) }}, домкрат {{ yn(a?.kit?.jack) }},
-                аптечка {{ yn(a?.kit?.firstAid) }}, килимки {{ yn(a?.kit?.rugs) }}, ключів: {{ a?.kit?.keys ?? '—' }}.
+                {{ L('Документи', 'Documents') }} {{ yn(a?.kit?.documents) }}, {{ L('запасне колесо', 'spare wheel') }} {{ yn(a?.kit?.spare) }}, {{ L('домкрат', 'jack') }} {{ yn(a?.kit?.jack) }},
+                {{ L('аптечка', 'first aid kit') }} {{ yn(a?.kit?.firstAid) }}, {{ L('килимки', 'mats') }} {{ yn(a?.kit?.rugs) }}, {{ L('ключів', 'keys') }}: {{ a?.kit?.keys ?? '—' }}.
               </p>
-              <div class="pt-label mt-4">Скарги клієнта</div>
+              <div class="pt-label mt-4">{{ L('Скарги клієнта', 'Customer complaints') }}</div>
               <p class="m-0">{{ a?.complaints || o.complaint || '—' }}</p>
             </div>
           </section>
           <p class="mt-5 text-[11px] text-[#55504a]">
-            Клієнт підтверджує зазначений стан автомобіля й комплектність, погоджується на проведення діагностики.
-            Особисті речі в автомобілі сервіс не приймає на зберігання.
+            {{
+              L(
+                'Клієнт підтверджує зазначений стан автомобіля й комплектність, погоджується на проведення діагностики. Особисті речі в автомобілі сервіс не приймає на зберігання.',
+                'The customer confirms the stated condition and contents of the vehicle and agrees to diagnostics. The service does not accept personal belongings left in the vehicle for safekeeping.'
+              )
+            }}
           </p>
         } @else {
           <section class="mt-5">
-            <div class="pt-label">Роботи</div>
+            <div class="pt-label">{{ L('Роботи', 'Labour') }}</div>
             <table class="pt-table">
-              <thead><tr><th class="w-8">№</th><th>Найменування</th><th class="w-16 text-right">Н/г</th><th class="w-20 text-right">Ціна</th><th class="w-24 text-right">Сума</th></tr></thead>
+              <thead><tr><th class="w-8">№</th><th>{{ L('Найменування', 'Description') }}</th><th class="w-16 text-right">{{ L('Н/г', 'Hrs') }}</th><th class="w-20 text-right">{{ L('Ціна', 'Price') }}</th><th class="w-24 text-right">{{ L('Сума', 'Amount') }}</th></tr></thead>
               <tbody>
                 @for (w of works(); track w.id; let i = $index) {
                   <tr><td>{{ i + 1 }}</td><td>{{ w.name }}</td><td class="text-right">{{ hours(w.hours) }}</td><td class="text-right">{{ money(w.rate) }}</td><td class="text-right">{{ money(wp(w)) }}</td></tr>
@@ -108,9 +116,9 @@ const TITLES: Record<Form, string> = { naryad: 'Замовлення-наряд'
             </table>
           </section>
           <section class="mt-4">
-            <div class="pt-label">Запчастини й матеріали</div>
+            <div class="pt-label">{{ L('Запчастини й матеріали', 'Parts and materials') }}</div>
             <table class="pt-table">
-              <thead><tr><th class="w-8">№</th><th>Найменування</th><th class="w-28">Артикул</th><th class="w-12 text-right">К-сть</th><th class="w-20 text-right">Ціна</th><th class="w-24 text-right">Сума</th></tr></thead>
+              <thead><tr><th class="w-8">№</th><th>{{ L('Найменування', 'Description') }}</th><th class="w-28">{{ L('Артикул', 'SKU') }}</th><th class="w-12 text-right">{{ L('К-сть', 'Qty') }}</th><th class="w-20 text-right">{{ L('Ціна', 'Price') }}</th><th class="w-24 text-right">{{ L('Сума', 'Amount') }}</th></tr></thead>
               <tbody>
                 @for (p of parts(); track p.id; let i = $index) {
                   <tr><td>{{ i + 1 }}</td><td>{{ p.name }}</td><td class="font-mono">{{ p.sku }}</td><td class="text-right">{{ p.qty }}</td><td class="text-right">{{ money(p.price) }}</td><td class="text-right">{{ money(pp(p)) }}</td></tr>
@@ -121,26 +129,30 @@ const TITLES: Record<Form, string> = { naryad: 'Замовлення-наряд'
             </table>
           </section>
           <section class="mt-4 ml-auto w-72">
-            <div class="flex justify-between"><span>Роботи</span><span>{{ money(t.works) }}</span></div>
-            <div class="flex justify-between"><span>Запчастини</span><span>{{ money(t.parts) }}</span></div>
+            <div class="flex justify-between"><span>{{ L('Роботи', 'Labour') }}</span><span>{{ money(t.works) }}</span></div>
+            <div class="flex justify-between"><span>{{ L('Запчастини', 'Parts') }}</span><span>{{ money(t.parts) }}</span></div>
             @if (t.discount) {
-              <div class="flex justify-between"><span>Знижка {{ o.discountPct }}%</span><span>−{{ money(t.discount) }}</span></div>
+              <div class="flex justify-between"><span>{{ L('Знижка', 'Discount') }} {{ o.discountPct }}%</span><span>−{{ money(t.discount) }}</span></div>
             }
-            <div class="mt-1 flex justify-between border-t border-[#1d1b17] pt-1 text-[14px] font-bold"><span>Разом до сплати</span><span>{{ money(t.total) }}</span></div>
-            <div class="flex justify-between"><span>Сплачено</span><span>{{ money(t.paid) }}</span></div>
+            <div class="mt-1 flex justify-between border-t border-[#1d1b17] pt-1 text-[14px] font-bold"><span>{{ L('Разом до сплати', 'Total due') }}</span><span>{{ money(t.total) }}</span></div>
+            <div class="flex justify-between"><span>{{ L('Сплачено', 'Paid') }}</span><span>{{ money(t.paid) }}</span></div>
             @if (t.debt) {
-              <div class="flex justify-between font-semibold"><span>Залишок</span><span>{{ money(t.debt) }}</span></div>
+              <div class="flex justify-between font-semibold"><span>{{ L('Залишок', 'Balance') }}</span><span>{{ money(t.debt) }}</span></div>
             }
           </section>
           @if (forma() === 'akt-robit') {
             <p class="mt-5 text-[11px] text-[#55504a]">
-              Роботи виконано в повному обсязі й у строк. Замовник претензій щодо обсягу, якості й строків не має.
-              Гарантія на роботи — 3 місяці або 5 000 км, на запчастини — згідно з гарантією виробника.
+              {{
+                L(
+                  'Роботи виконано в повному обсязі й у строк. Замовник претензій щодо обсягу, якості й строків не має. Гарантія на роботи — 3 місяці або 5 000 км, на запчастини — згідно з гарантією виробника.',
+                  'The work was completed in full and on time. The customer has no claims regarding its scope, quality or timing. Labour is guaranteed for 3 months or 5,000 km; parts carry the manufacturer’s warranty.'
+                )
+              }}
             </p>
           }
           @if (declined().length) {
             <section class="mt-4">
-              <div class="pt-label">Рекомендації, від яких клієнт відмовився</div>
+              <div class="pt-label">{{ L('Рекомендації, від яких клієнт відмовився', 'Recommendations declined by the customer') }}</div>
               <p class="m-0">{{ declined().join('; ') }}.</p>
             </section>
           }
@@ -148,13 +160,13 @@ const TITLES: Record<Form, string> = { naryad: 'Замовлення-наряд'
 
         <footer class="mt-10 grid grid-cols-2 gap-10">
           <div>
-            <div class="pt-label">Від сервісу</div>
-            <div class="mt-8 border-t border-[#1d1b17] pt-1 text-[11px]">{{ o.intake?.receivedBy || 'Майстер-приймальник' }}</div>
+            <div class="pt-label">{{ L('Від сервісу', 'For the service') }}</div>
+            <div class="mt-8 border-t border-[#1d1b17] pt-1 text-[11px]">{{ o.intake?.receivedBy || L('Майстер-приймальник', 'Service advisor') }}</div>
           </div>
           <div>
-            <div class="pt-label">Замовник</div>
+            <div class="pt-label">{{ L('Замовник', 'Customer') }}</div>
             @if (o.intake?.signature && forma() === 'akt-pryiomu') {
-              <img [src]="o.intake!.signature" alt="Підпис клієнта" class="-mb-2 h-14" />
+              <img [src]="o.intake!.signature" [alt]="L('Підпис клієнта', 'Customer signature')" class="-mb-2 h-14" />
             } @else {
               <div class="h-8"></div>
             }
@@ -195,6 +207,8 @@ const TITLES: Record<Form, string> = { naryad: 'Замовлення-наряд'
   `,
 })
 export class PrintPage {
+  protected readonly L = L;
+  protected readonly brand = BRAND;
   protected readonly I = I;
   protected readonly db = inject(DbService);
   private readonly titles = inject(TorkTitleStrategy);
@@ -202,9 +216,9 @@ export class PrintPage {
   readonly forma = input<Form, string | undefined>('naryad', { transform: (v) => (v === 'akt-pryiomu' || v === 'akt-robit' ? v : 'naryad') });
 
   protected readonly forms: Option<Form>[] = [
-    { value: 'naryad', label: 'Наряд' },
-    { value: 'akt-pryiomu', label: 'Акт прийому' },
-    { value: 'akt-robit', label: 'Акт робіт' },
+    { value: 'naryad', label: L('Наряд', 'Work order') },
+    { value: 'akt-pryiomu', label: L('Акт прийому', 'Intake report') },
+    { value: 'akt-robit', label: L('Акт робіт', 'Completion') },
   ];
   protected readonly money = fmtMoney;
   protected readonly hours = fmtHours;
@@ -245,7 +259,7 @@ export class PrintPage {
     return DAMAGE_LABEL[k];
   }
   protected yn(v: boolean | undefined): string {
-    return v === undefined ? '—' : v ? 'є' : 'немає';
+    return v === undefined ? '—' : v ? L('є', 'yes') : L('немає', 'no');
   }
   protected print(): void {
     window.print();

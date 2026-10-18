@@ -8,9 +8,13 @@ import { CellDef, Column, DataTable, FilterDef } from '../../shared/ui/data-tabl
 import { Plate } from '../../shared/ui/display';
 import { fmtDateTime, fmtMoney, fmtPct } from '../../shared/format';
 import { OrdersHeader } from '../orders/orders-header';
+import { L } from '../../core/i18n';
 
 type Row = Approval & { r: { number: string; client: string; plate: string; total: number; approved: number; pct: number | null } };
-const STATUS: Record<Approval['status'], string> = { sent: 'Чекає відповіді', answered: 'Відповів', cancelled: 'Скасовано' };
+const STATUS: Record<Approval['status'], string> = L(
+  { sent: 'Чекає відповіді', answered: 'Відповів', cancelled: 'Скасовано' },
+  { sent: 'Awaiting reply', answered: 'Replied', cancelled: 'Cancelled' },
+);
 
 /** Усі погодження: хто ще не відповів, конверсія у погоджені роботи */
 @Component({
@@ -20,18 +24,18 @@ const STATUS: Record<Approval['status'], string> = { sent: 'Чекає відп�
   template: `
     <tk-orders-header />
     @if (db.ready()) {
-      <div class="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="Підсумок погоджень">
-        <div class="card p-3.5"><div class="text-xs text-ink-2">Чекають відповіді</div><div class="mt-0.5 text-lg font-semibold num">{{ stats().waiting }}</div></div>
-        <div class="card p-3.5"><div class="text-xs text-ink-2">Конверсія за 30 днів</div><div class="mt-0.5 text-lg font-semibold num">{{ stats().conv }}</div></div>
-        <div class="card p-3.5"><div class="text-xs text-ink-2">Погоджено на суму</div><div class="mt-0.5 text-lg font-semibold num">{{ money(stats().approved) }}</div></div>
-        <div class="card p-3.5"><div class="text-xs text-ink-2">Відкладено клієнтами</div><div class="mt-0.5 text-lg font-semibold num">{{ money(stats().declined) }}</div></div>
+      <div class="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4" [attr.aria-label]="L('Підсумок погоджень', 'Approvals summary')">
+        <div class="card p-3.5"><div class="text-xs text-ink-2">{{ L('Чекають відповіді', 'Awaiting reply') }}</div><div class="mt-0.5 text-lg font-semibold num">{{ stats().waiting }}</div></div>
+        <div class="card p-3.5"><div class="text-xs text-ink-2">{{ L('Конверсія за 30 днів', '30-day approval rate') }}</div><div class="mt-0.5 text-lg font-semibold num">{{ stats().conv }}</div></div>
+        <div class="card p-3.5"><div class="text-xs text-ink-2">{{ L('Погоджено на суму', 'Approved amount') }}</div><div class="mt-0.5 text-lg font-semibold num">{{ money(stats().approved) }}</div></div>
+        <div class="card p-3.5"><div class="text-xs text-ink-2">{{ L('Відкладено клієнтами', 'Deferred by customers') }}</div><div class="mt-0.5 text-lg font-semibold num">{{ money(stats().declined) }}</div></div>
       </div>
     }
     <tk-data-table
       tableId="approvals"
       csvName="pogodzhennia"
-      ariaLabel="Погодження"
-      searchPlaceholder="Наряд, клієнт, номер авто…"
+      [ariaLabel]="L('Погодження', 'Approvals')"
+      [searchPlaceholder]="L('Наряд, клієнт, номер авто…', 'Work order, customer, number plate…')"
       [rows]="rows()"
       [columns]="columns"
       [filters]="filters"
@@ -41,8 +45,8 @@ const STATUS: Record<Approval['status'], string> = { sent: 'Чекає відп�
       [defaultSort]="{ key: 'sent', dir: 'desc' }"
       [flashIds]="flash()"
       emptyArt="inbox"
-      emptyTitle="Погоджень ще не було"
-      emptyText="Додайте рекомендації в наряді після діагностики й надішліть клієнту."
+      [emptyTitle]="L('Погоджень ще не було', 'No approvals yet')"
+      [emptyText]="L('Додайте рекомендації в наряді після діагностики й надішліть клієнту.', 'Add recommendations in a work order after diagnostics and send them to the customer.')"
       (rowClick)="open($event)"
     >
       <ng-template tkCell="number" let-r><a [routerLink]="['/naryady', r.orderId]" fragment="pogodzhennia" class="row-link mono">{{ r.r.number }}</a></ng-template>
@@ -57,13 +61,14 @@ const STATUS: Record<Approval['status'], string> = { sent: 'Чекає відп�
       </ng-template>
       <ng-template tkCell="link" let-r>
         @if (r.status === 'sent') {
-          <a class="btn btn-ghost btn-sm" [href]="'pogodzhennia/' + r.token" target="_blank" rel="noopener"><svg [lucideIcon]="I.external" aria-hidden="true"></svg>Як клієнт</a>
+          <a class="btn btn-ghost btn-sm" [href]="'pogodzhennia/' + r.token" target="_blank" rel="noopener"><svg [lucideIcon]="I.external" aria-hidden="true"></svg>{{ L('Як клієнт', 'Customer view') }}</a>
         }
       </ng-template>
     </tk-data-table>
   `,
 })
 export class ApprovalsList {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly db = inject(DbService);
   private readonly router = inject(Router);
@@ -109,22 +114,22 @@ export class ApprovalsList {
   });
 
   protected readonly columns: Column<Row>[] = [
-    { key: 'number', label: 'Наряд', value: (r) => r.r.number, required: true },
-    { key: 'client', label: 'Клієнт', value: (r) => r.r.client },
-    { key: 'plate', label: 'Авто', value: (r) => r.r.plate, sortable: false },
-    { key: 'sent', label: 'Надіслано', value: (r) => r.sentAt, format: (r) => fmtDateTime(r.sentAt) },
-    { key: 'status', label: 'Статус', value: (r) => STATUS[r.status] },
-    { key: 'items', label: 'Позицій', value: (r) => r.items.length, align: 'right' },
-    { key: 'total', label: 'Запропоновано', value: (r) => r.r.total, format: (r) => fmtMoney(r.r.total), align: 'right' },
-    { key: 'approved', label: 'Погоджено', value: (r) => r.r.approved, format: (r) => (r.status === 'answered' ? `${fmtMoney(r.r.approved)} (${r.r.pct}%)` : '—'), align: 'right' },
-    { key: 'answered', label: 'Відповідь', value: (r) => r.answeredAt, format: (r) => fmtDateTime(r.answeredAt), hidden: true },
+    { key: 'number', label: L('Наряд', 'Work order'), value: (r) => r.r.number, required: true },
+    { key: 'client', label: L('Клієнт', 'Customer'), value: (r) => r.r.client },
+    { key: 'plate', label: L('Авто', 'Car'), value: (r) => r.r.plate, sortable: false },
+    { key: 'sent', label: L('Надіслано', 'Sent'), value: (r) => r.sentAt, format: (r) => fmtDateTime(r.sentAt) },
+    { key: 'status', label: L('Статус', 'Status'), value: (r) => STATUS[r.status] },
+    { key: 'items', label: L('Позицій', 'Items'), value: (r) => r.items.length, align: 'right' },
+    { key: 'total', label: L('Запропоновано', 'Proposed'), value: (r) => r.r.total, format: (r) => fmtMoney(r.r.total), align: 'right' },
+    { key: 'approved', label: L('Погоджено', 'Approved'), value: (r) => r.r.approved, format: (r) => (r.status === 'answered' ? `${fmtMoney(r.r.approved)} (${r.r.pct}%)` : '—'), align: 'right' },
+    { key: 'answered', label: L('Відповідь', 'Replied'), value: (r) => r.answeredAt, format: (r) => fmtDateTime(r.answeredAt), hidden: true },
     { key: 'link', label: '', value: () => '', sortable: false, csv: (r) => `/pogodzhennia/${r.token}` },
   ];
 
   protected readonly filters: FilterDef<Row>[] = [
     {
       key: 'status',
-      label: 'Статус',
+      label: L('Статус', 'Status'),
       options: (['sent', 'answered', 'cancelled'] as const).map((s) => ({ value: s, label: STATUS[s] })),
       match: (r, v) => v.includes(r.status),
     },

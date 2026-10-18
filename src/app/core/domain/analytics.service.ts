@@ -4,6 +4,7 @@ import { Order } from '../data/models';
 import { StatsService } from './stats.service';
 import { partPrice, workPrice } from './order-math';
 import { addDays, startOfDay, toMin, ymd } from '../../shared/format';
+import { BRAND, L } from '../i18n';
 
 export interface Period {
   from: number;
@@ -98,7 +99,7 @@ export class AnalyticsService {
   /** Середнє завантаження постів по днях тижня (Пн–Сб), % робочого часу */
   heatmap(p: Period, branches: string[] | null): { posts: string[]; days: string[]; cells: [number, number, number][] } {
     const posts = this.db.posts.items().filter((x) => x.active && (!branches || branches.includes(x.branchId)));
-    const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+    const dayNames = L(['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'], ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
     const busy = new Map<string, number>();
     for (const o of this.db.orders.items()) {
       if (o.status === 'skasovano' || !o.postId || !o.start) continue;
@@ -122,7 +123,7 @@ export class AnalyticsService {
       }
     });
     const multi = !branches || branches.length > 1;
-    return { posts: posts.map((x) => (multi ? `${x.name} (${this.db.branches.get(x.branchId)?.name.replace('Торк ', '').slice(0, 3)}.)` : x.name)), days: dayNames, cells };
+    return { posts: posts.map((x) => (multi ? `${x.name} (${this.db.branches.get(x.branchId)?.name.replace(`${BRAND} `, '').slice(0, 3)}.)` : x.name)), days: dayNames, cells };
   }
 
   top(p: Period, branches: string[] | null, kind: 'works' | 'parts', n = 7): { name: string; value: number; count: number }[] {

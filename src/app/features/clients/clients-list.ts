@@ -16,6 +16,7 @@ import { Avatar, Plate } from '../../shared/ui/display';
 import { Tooltip } from '../../shared/ui/tooltip';
 import { PromptDialog, PromptData } from '../../shared/ui/prompt-dialog';
 import { fmtDate, fmtMoney, fmtNum, fmtPhone, plural } from '../../shared/format';
+import { L } from '../../core/i18n';
 
 type Row = Client & { s: { visits: number; revenue: number; debt: number; lastVisit: string | null; plates: string[] } };
 
@@ -24,17 +25,17 @@ type Row = Client & { s: { visits: number; revenue: number; debt: number; lastVi
   imports: [RouterLink, Icon, PageHeader, DataTable, CellDef, BulkDef, Avatar, Plate, Tooltip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <tk-page-header title="Клієнти" [subtitle]="subtitle()">
+    <tk-page-header [title]="L('Клієнти', 'Customers')" [subtitle]="subtitle()">
       <button type="button" class="btn btn-primary" (click)="quick.newClient()">
-        <svg [lucideIcon]="I.userPlus" aria-hidden="true"></svg>Новий клієнт
+        <svg [lucideIcon]="I.userPlus" aria-hidden="true"></svg>{{ L('Новий клієнт', 'New customer') }}
       </button>
     </tk-page-header>
 
     <tk-data-table
       tableId="clients"
       csvName="kliyenty"
-      ariaLabel="Клієнти"
-      searchPlaceholder="Ім’я, телефон, номер авто…"
+      [ariaLabel]="L('Клієнти', 'Customers')"
+      [searchPlaceholder]="L('Ім’я, телефон, номер авто…', 'Name, phone, number plate…')"
       [rows]="rows()"
       [columns]="columns"
       [filters]="filters()"
@@ -46,8 +47,8 @@ type Row = Client & { s: { visits: number; revenue: number; debt: number; lastVi
       [searchText]="searchText"
       [flashIds]="flash()"
       emptyArt="clients"
-      emptyTitle="Клієнтів ще немає"
-      emptyText="Додайте першого клієнта — або він з’явиться автоматично при створенні наряду."
+      [emptyTitle]="L('Клієнтів ще немає', 'No customers yet')"
+      [emptyText]="L('Додайте першого клієнта — або він з’явиться автоматично при створенні наряду.', 'Add your first customer — or one will appear automatically when you create a work order.')"
       (rowClick)="open($event)"
     >
       <ng-template tkCell="name" let-r>
@@ -55,7 +56,7 @@ type Row = Client & { s: { visits: number; revenue: number; debt: number; lastVi
           <tk-avatar [name]="r.name" />
           <a [routerLink]="['/kliyenty', r.id]" class="row-link truncate-1 max-w-[24ch]" [tkTip]="r.name" [tipTruncated]="true">{{ r.name }}</a>
           @if (r.kind === 'company') {
-            <span class="badge badge-info">компанія</span>
+            <span class="badge badge-info">{{ L('компанія', 'company') }}</span>
           }
         </span>
       </ng-template>
@@ -88,19 +89,20 @@ type Row = Client & { s: { visits: number; revenue: number; debt: number; lastVi
       </ng-template>
       <ng-template tkBulk let-rows>
         <button type="button" class="btn btn-sm" (click)="addTag(rows)">
-          <svg [lucideIcon]="I.tag" aria-hidden="true"></svg>Додати тег
+          <svg [lucideIcon]="I.tag" aria-hidden="true"></svg>{{ L('Додати тег', 'Add tag') }}
         </button>
         <button type="button" class="btn btn-sm btn-danger" (click)="remove(rows)">
-          <svg [lucideIcon]="I.trash" aria-hidden="true"></svg>Видалити
+          <svg [lucideIcon]="I.trash" aria-hidden="true"></svg>{{ L('Видалити', 'Delete') }}
         </button>
       </ng-template>
       <button empty type="button" class="btn btn-primary" (click)="quick.newClient()">
-        <svg [lucideIcon]="I.userPlus" aria-hidden="true"></svg>Додати клієнта
+        <svg [lucideIcon]="I.userPlus" aria-hidden="true"></svg>{{ L('Додати клієнта', 'Add customer') }}
       </button>
     </tk-data-table>
   `,
 })
 export class ClientsList {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly db = inject(DbService);
   protected readonly quick = inject(QuickActions);
@@ -134,10 +136,10 @@ export class ClientsList {
   });
 
   protected readonly subtitle = computed(() => {
-    if (!this.db.ready()) return 'Завантаження…';
+    if (!this.db.ready()) return L('Завантаження…', 'Loading…');
     const n = this.rows().length;
     const debtors = this.rows().filter((r) => r.s.debt > 0).length;
-    return `${fmtNum(n)} ${plural(n, ['клієнт', 'клієнти', 'клієнтів'])}${debtors ? `, ${debtors} з боргом` : ''}`;
+    return `${fmtNum(n)} ${plural(n, ['клієнт', 'клієнти', 'клієнтів'], ['customer', 'customers'])}${debtors ? L(`, ${debtors} з боргом`, `, ${debtors} with debt`) : ''}`;
   });
 
   /** Підсвітка рядків, змінених в іншій вкладці */
@@ -148,40 +150,40 @@ export class ClientsList {
   });
 
   protected readonly columns: Column<Row>[] = [
-    { key: 'name', label: 'Клієнт', value: (r) => r.name, required: true },
-    { key: 'phone', label: 'Телефон', value: (r) => r.phone, format: (r) => fmtPhone(r.phone), sortable: false },
-    { key: 'cars', label: 'Авто', value: (r) => r.s.plates.length, csv: (r) => r.s.plates.join(', '), sortable: true },
-    { key: 'visits', label: 'Візити', value: (r) => r.s.visits, align: 'right' },
-    { key: 'revenue', label: 'Сума', value: (r) => r.s.revenue, format: (r) => fmtMoney(r.s.revenue), csv: (r) => r.s.revenue, align: 'right' },
-    { key: 'debt', label: 'Борг', value: (r) => r.s.debt, csv: (r) => r.s.debt, align: 'right' },
-    { key: 'last', label: 'Останній візит', value: (r) => r.s.lastVisit, format: (r) => fmtDate(r.s.lastVisit) },
-    { key: 'tags', label: 'Теги', value: (r) => r.tags.join(', '), sortable: false },
+    { key: 'name', label: L('Клієнт', 'Customer'), value: (r) => r.name, required: true },
+    { key: 'phone', label: L('Телефон', 'Phone'), value: (r) => r.phone, format: (r) => fmtPhone(r.phone), sortable: false },
+    { key: 'cars', label: L('Авто', 'Cars'), value: (r) => r.s.plates.length, csv: (r) => r.s.plates.join(', '), sortable: true },
+    { key: 'visits', label: L('Візити', 'Visits'), value: (r) => r.s.visits, align: 'right' },
+    { key: 'revenue', label: L('Сума', 'Total'), value: (r) => r.s.revenue, format: (r) => fmtMoney(r.s.revenue), csv: (r) => r.s.revenue, align: 'right' },
+    { key: 'debt', label: L('Борг', 'Debt'), value: (r) => r.s.debt, csv: (r) => r.s.debt, align: 'right' },
+    { key: 'last', label: L('Останній візит', 'Last visit'), value: (r) => r.s.lastVisit, format: (r) => fmtDate(r.s.lastVisit) },
+    { key: 'tags', label: L('Теги', 'Tags'), value: (r) => r.tags.join(', '), sortable: false },
     { key: 'email', label: 'Email', value: (r) => r.email, hidden: true },
-    { key: 'created', label: 'Клієнт з', value: (r) => r.createdAt, format: (r) => fmtDate(r.createdAt), hidden: true },
+    { key: 'created', label: L('Клієнт з', 'Customer since'), value: (r) => r.createdAt, format: (r) => fmtDate(r.createdAt), hidden: true },
   ];
 
   protected readonly filters = computed<FilterDef<Row>[]>(() => [
     {
       key: 'kind',
-      label: 'Тип',
+      label: L('Тип', 'Type'),
       options: [
-        { value: 'person', label: 'Фізособи' },
-        { value: 'company', label: 'Компанії' },
+        { value: 'person', label: L('Фізособи', 'Individuals') },
+        { value: 'company', label: L('Компанії', 'Companies') },
       ],
       match: (r, v) => v.includes(r.kind),
     },
     {
       key: 'tags',
-      label: 'Теги',
+      label: L('Теги', 'Tags'),
       options: this.clientsSvc.allTags().map((t) => ({ value: t, label: t })),
       match: (r, v) => r.tags.some((t) => v.includes(t)),
     },
     {
       key: 'debt',
-      label: 'Борг',
+      label: L('Борг', 'Debt'),
       options: [
-        { value: 'yes', label: 'Є борг' },
-        { value: 'no', label: 'Без боргу' },
+        { value: 'yes', label: L('Є борг', 'Has debt') },
+        { value: 'no', label: L('Без боргу', 'No debt') },
       ],
       match: (r, v) => v.includes(r.s.debt > 0 ? 'yes' : 'no'),
     },
@@ -194,7 +196,7 @@ export class ClientsList {
   protected async addTag(rows: Row[]): Promise<void> {
     const ref = this.dialogs.open<PromptDialog, PromptData, string>(
       PromptDialog,
-      { title: `Тег для ${rows.length} ${plural(rows.length, ['клієнта', 'клієнтів', 'клієнтів'])}`, label: 'Тег', confirm: 'Додати', placeholder: 'постійний' },
+      { title: `${L('Тег для', 'Tag for')} ${rows.length} ${plural(rows.length, ['клієнта', 'клієнтів', 'клієнтів'], ['customer', 'customers'])}`, label: L('Тег', 'Tag'), confirm: L('Додати', 'Add'), placeholder: L('постійний', 'regular') },
       { size: 'sm' },
     );
     const tag = (await firstValueFrom(ref.closed))?.trim();
@@ -203,9 +205,9 @@ export class ClientsList {
       await this.db.clients.updateMany(
         rows.map((r) => r.id),
         (c) => ({ tags: c.tags.includes(tag) ? c.tags : [...c.tags, tag] }),
-        { log: `Тег «${tag}» додано ${rows.length} клієнтам` },
+        { log: L(`Тег «${tag}» додано ${rows.length} клієнтам`, `Tag “${tag}” added to ${rows.length} customers`) },
       );
-      this.toast.success(`Тег «${tag}» додано`);
+      this.toast.success(L(`Тег «${tag}» додано`, `Tag “${tag}” added`));
     } catch (e) {
       this.toast.error(e);
     }
@@ -215,15 +217,18 @@ export class ClientsList {
     const ids = rows.map((r) => r.id);
     const info = this.clientsSvc.cascadeInfo(ids);
     const ok = await this.dialogs.confirm({
-      title: rows.length === 1 ? `Видалити клієнта ${rows[0].name}?` : `Видалити ${rows.length} ${plural(rows.length, ['клієнта', 'клієнтів', 'клієнтів'])}?`,
+      title:
+        rows.length === 1
+          ? L(`Видалити клієнта ${rows[0].name}?`, `Delete customer ${rows[0].name}?`)
+          : `${L('Видалити', 'Delete')} ${rows.length} ${plural(rows.length, ['клієнта', 'клієнтів', 'клієнтів'], ['customer', 'customers'])}?`,
       text: this.clientsSvc.cascadeText(info),
-      confirm: 'Видалити',
+      confirm: L('Видалити', 'Delete'),
       danger: true,
     });
     if (!ok) return;
     try {
       const restore = await this.clientsSvc.deleteClients(ids);
-      this.toast.undo(rows.length === 1 ? 'Клієнта видалено' : `Видалено клієнтів: ${rows.length}`, restore);
+      this.toast.undo(rows.length === 1 ? L('Клієнта видалено', 'Customer deleted') : L(`Видалено клієнтів: ${rows.length}`, `Customers deleted: ${rows.length}`), restore);
     } catch (e) {
       this.toast.error(e);
     }

@@ -4,6 +4,7 @@ import { Overlay } from '@angular/cdk/overlay';
 import { ComponentType } from '@angular/cdk/portal';
 import { firstValueFrom } from 'rxjs';
 import { ConfirmDialog, ConfirmData } from '../../shared/ui/confirm-dialog';
+import { L } from '../i18n';
 
 /** Компонент у модалці може відмовити в закритті (незбережені зміни) */
 export interface Closable {
@@ -64,10 +65,10 @@ export class Dialogs {
   /** Попередження про незбережені зміни */
   discard(): Promise<boolean> {
     return this.confirm({
-      title: 'Закрити без збереження?',
-      text: 'Зміни в цій формі буде втрачено.',
-      confirm: 'Закрити без збереження',
-      cancel: 'Повернутися до форми',
+      title: L('Закрити без збереження?', 'Close without saving?'),
+      text: L('Зміни в цій формі буде втрачено.', 'Your changes in this form will be lost.'),
+      confirm: L('Закрити без збереження', 'Close without saving'),
+      cancel: L('Повернутися до форми', 'Back to the form'),
       danger: true,
     });
   }

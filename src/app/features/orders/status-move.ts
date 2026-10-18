@@ -6,6 +6,7 @@ import { OrdersService } from '../../core/domain/orders.service';
 import { STATUS_LABEL, canMove } from '../../core/domain/order-math';
 import { Dialogs } from '../../core/ui/dialogs.service';
 import { ToastService } from '../../core/ui/toast.service';
+import { L } from '../../core/i18n';
 
 /**
  * Зміна статусу з інтерфейсу (канбан, сторінка наряду, табло): перевірка переходу,
@@ -28,10 +29,10 @@ export class StatusMove {
     const warn = this.orders.warnings(o, to);
     if (warn.length || to === 'skasovano') {
       const ok = await this.dialogs.confirm({
-        title: to === 'skasovano' ? `Скасувати наряд ${o.number}?` : `Перевести ${o.number} у «${STATUS_LABEL[to]}»?`,
-        text: warn.join(' ') || 'Резерви запчастин буде знято.',
-        confirm: to === 'skasovano' ? 'Скасувати наряд' : `Так, у «${STATUS_LABEL[to]}»`,
-        cancel: 'Не змінювати',
+        title: to === 'skasovano' ? L(`Скасувати наряд ${o.number}?`, `Cancel work order ${o.number}?`) : L(`Перевести ${o.number} у «${STATUS_LABEL[to]}»?`, `Move ${o.number} to “${STATUS_LABEL[to]}”?`),
+        text: warn.join(' ') || L('Резерви запчастин буде знято.', 'Part reservations will be released.'),
+        confirm: to === 'skasovano' ? L('Скасувати наряд', 'Cancel work order') : L(`Так, у «${STATUS_LABEL[to]}»`, `Yes, move to “${STATUS_LABEL[to]}”`),
+        cancel: L('Не змінювати', 'Keep as is'),
         danger: to === 'skasovano',
       });
       if (!ok) return false;
@@ -39,11 +40,11 @@ export class StatusMove {
     try {
       const prev = o.status;
       await this.orders.setStatus(this.db.orders.get(o.id) ?? o, to);
-      const undo = { label: 'Скасувати', run: () => this.revert(o.id, prev) };
+      const undo = { label: L('Скасувати', 'Undo'), run: () => this.revert(o.id, prev) };
       if (to === 'pryiom' && !o.intake)
-        this.toast.info(`${o.number}: прийом. Заповніть акт прийому`, { label: 'Відкрити акт', run: () => void this.router.navigate(['/naryady', o.id, 'pryiom']) });
+        this.toast.info(L(`${o.number}: прийом. Заповніть акт прийому`, `${o.number}: intake. Fill in the intake report`), { label: L('Відкрити акт', 'Open report'), run: () => void this.router.navigate(['/naryady', o.id, 'pryiom']) });
       else if (to === 'pogodzhennia' && !o.approvalId)
-        this.toast.info(`${o.number}: додайте рекомендації й надішліть клієнту`, { label: 'Відкрити', run: () => void this.router.navigate(['/naryady', o.id], { fragment: 'pogodzhennia' }) });
+        this.toast.info(L(`${o.number}: додайте рекомендації й надішліть клієнту`, `${o.number}: add recommendations and send them to the customer`), { label: L('Відкрити', 'Open'), run: () => void this.router.navigate(['/naryady', o.id], { fragment: 'pogodzhennia' }) });
       else this.toast.success(`${o.number}: ${STATUS_LABEL[to]}`, canMove(to, prev).ok ? undo : undefined);
       return true;
     } catch (e) {

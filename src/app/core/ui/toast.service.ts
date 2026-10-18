@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { L } from '../i18n';
 
 export type ToastKind = 'success' | 'error' | 'info';
 
@@ -30,7 +31,7 @@ export class ToastService {
     return this.show(text, 'success', action);
   }
   error(text: string | unknown) {
-    const msg = typeof text === 'string' ? text : text instanceof Error ? text.message : 'Щось пішло не так. Спробуйте ще раз.';
+    const msg = typeof text === 'string' ? text : text instanceof Error ? text.message : L('Щось пішло не так. Спробуйте ще раз.', 'Something went wrong. Please try again.');
     return this.show(msg, 'error');
   }
   info(text: string, action?: Toast['action']) {
@@ -39,7 +40,7 @@ export class ToastService {
 
   /** Після видалення: «Клієнта видалено» + «Скасувати» */
   undo(text: string, restore: () => Promise<void>) {
-    return this.show(text, 'success', { label: 'Скасувати', run: restore }, 6000);
+    return this.show(text, 'success', { label: L('Скасувати', 'Undo'), run: restore }, 6000);
   }
 
   dismiss(id: number): void {

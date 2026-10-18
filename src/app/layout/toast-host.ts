@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { Icon } from '../shared/ui/icon';
 import { I } from '../shared/icons';
 import { Toast, ToastService } from '../core/ui/toast.service';
+import { L } from '../core/i18n';
 
 /** Стос тостів унизу праворуч. Успіх/інфо — aria-live polite, помилки — assertive */
 @Component({
@@ -27,7 +28,7 @@ import { Toast, ToastService } from '../core/ui/toast.service';
         @if (t.action; as a) {
           <button type="button" class="btn btn-sm btn-ghost text-accent-ink! font-semibold" (click)="run(t)">{{ a.label }}</button>
         }
-        <button type="button" class="btn btn-ghost btn-icon btn-sm" aria-label="Закрити сповіщення" (click)="toasts.dismiss(t.id)">
+        <button type="button" class="btn btn-ghost btn-icon btn-sm" [attr.aria-label]="L('Закрити сповіщення', 'Close notification')" (click)="toasts.dismiss(t.id)">
           <svg [lucideIcon]="I.x" [size]="14" aria-hidden="true"></svg>
         </button>
       </div>
@@ -35,6 +36,7 @@ import { Toast, ToastService } from '../core/ui/toast.service';
   `,
 })
 export class ToastHost {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly toasts = inject(ToastService);
   protected readonly politeText = computed(() => this.toasts.items().filter((t) => t.kind !== 'error').at(-1)?.text ?? '');

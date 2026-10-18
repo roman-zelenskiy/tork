@@ -17,6 +17,7 @@ import { Dialogs } from '../core/ui/dialogs.service';
 import { CommandPalette } from './command-palette';
 import { ShortcutsDialog } from './shortcuts-dialog';
 import { ToastService } from '../core/ui/toast.service';
+import { L } from '../core/i18n';
 
 /** Оболонка CRM: сайдбар, топбар, банер сховища, вміст розділу */
 @Component({
@@ -25,10 +26,10 @@ import { ToastService } from '../core/ui/toast.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex min-h-dvh' },
   template: `
-    <a href="#main" class="sr-only z-[1200] rounded-md bg-surface px-3 py-2 shadow-pop focus:not-sr-only focus:fixed focus:top-2 focus:left-2">Перейти до вмісту</a>
+    <a href="#main" class="sr-only z-[1200] rounded-md bg-surface px-3 py-2 shadow-pop focus:not-sr-only focus:fixed focus:top-2 focus:left-2">{{ L('Перейти до вмісту', 'Skip to content') }}</a>
 
     <!-- десктоп -->
-    <aside class="shell-aside no-print sticky top-0 hidden h-dvh flex-none border-r border-line bg-bg lg:block" aria-label="Головне меню">
+    <aside class="shell-aside no-print sticky top-0 hidden h-dvh flex-none border-r border-line bg-bg lg:block" [attr.aria-label]="L('Головне меню', 'Main menu')">
       <tk-sidebar />
     </aside>
 
@@ -37,7 +38,7 @@ import { ToastService } from '../core/ui/toast.service';
       <div class="animate-fade fixed inset-0 z-[900] bg-[var(--overlay)] lg:hidden" (click)="mobileNav.set(false)" aria-hidden="true"></div>
       <aside
         class="animate-drawer fixed inset-y-0 left-0 z-[901] w-[min(280px,85vw)] border-r border-line bg-bg shadow-pop lg:hidden"
-        aria-label="Головне меню"
+        [attr.aria-label]="L('Головне меню', 'Main menu')"
         tabindex="-1"
         cdkTrapFocus
         [cdkTrapFocusAutoCapture]="true"
@@ -56,17 +57,17 @@ import { ToastService } from '../core/ui/toast.service';
           <span class="flex-1">
             {{
               p === 'quota'
-                ? 'Сховище браузера заповнене — останню зміну не збережено. Видаліть зайві фото або експортуйте дані.'
-                : 'Браузер не дозволяє зберігати дані (приватний режим або заборона cookies). Зміни діятимуть до закриття вкладки.'
+                ? L('Сховище браузера заповнене — останню зміну не збережено. Видаліть зайві фото або експортуйте дані.', 'Browser storage is full — the last change wasn’t saved. Delete unneeded photos or export your data.')
+                : L('Браузер не дозволяє зберігати дані (приватний режим або заборона cookies). Зміни діятимуть до закриття вкладки.', 'The browser doesn’t allow saving data (private mode or blocked cookies). Changes will last until you close the tab.')
             }}
           </span>
-          <a routerLink="/nalashtuvannia/dani" class="link font-medium">Керувати даними</a>
+          <a routerLink="/nalashtuvannia/dani" class="link font-medium">{{ L('Керувати даними', 'Manage data') }}</a>
         </div>
       }
 
       <main id="main" tabindex="-1" class="min-w-0 flex-1 px-4 pt-5 pb-10 outline-none sm:px-6 lg:px-8">
         @if (db.loadError(); as err) {
-          <tk-error title="Не вдалося відкрити базу" [text]="err" (retry)="retry()" />
+          <tk-error [title]="L('Не вдалося відкрити базу', 'Couldn’t open the database')" [text]="err" (retry)="retry()" />
         } @else {
           <router-outlet />
         }
@@ -75,6 +76,7 @@ import { ToastService } from '../core/ui/toast.service';
   `,
 })
 export class Shell {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly db = inject(DbService);
   protected readonly storage = inject(StorageService);
@@ -87,12 +89,12 @@ export class Shell {
 
   constructor() {
     const off = [
-      this.hotkeys.register({ combo: 'mod+k', description: 'Командна палітра', handler: () => this.openPalette(), allowInInput: true }),
-      this.hotkeys.register({ combo: 'n', description: 'Новий наряд', handler: () => void this.quick.newOrder() }),
-      this.hotkeys.register({ combo: '[', description: 'Згорнути/розгорнути меню', handler: () => void this.theme.toggleSidebar() }),
-      this.hotkeys.register({ combo: 'shift+?', description: 'Гарячі клавіші', handler: () => this.dialogs.open(ShortcutsDialog, null, { size: 'sm', label: 'Гарячі клавіші' }) }),
-      this.hotkeys.register({ combo: 't', description: 'Табло постів', handler: () => void this.router.navigate(['/tablo']) }),
-      this.hotkeys.register({ combo: 'k', description: 'Канбан нарядів', handler: () => void this.router.navigate(['/naryady/kanban']) }),
+      this.hotkeys.register({ combo: 'mod+k', description: L('Командна палітра', 'Command palette'), handler: () => this.openPalette(), allowInInput: true }),
+      this.hotkeys.register({ combo: 'n', description: L('Новий наряд', 'New work order'), handler: () => void this.quick.newOrder() }),
+      this.hotkeys.register({ combo: '[', description: L('Згорнути/розгорнути меню', 'Collapse/expand menu'), handler: () => void this.theme.toggleSidebar() }),
+      this.hotkeys.register({ combo: 'shift+?', description: L('Гарячі клавіші', 'Keyboard shortcuts'), handler: () => this.dialogs.open(ShortcutsDialog, null, { size: 'sm', label: L('Гарячі клавіші', 'Keyboard shortcuts') }) }),
+      this.hotkeys.register({ combo: 't', description: L('Табло постів', 'Bay board'), handler: () => void this.router.navigate(['/tablo']) }),
+      this.hotkeys.register({ combo: 'k', description: L('Канбан нарядів', 'Work order kanban'), handler: () => void this.router.navigate(['/naryady/kanban']) }),
     ];
     inject(DestroyRef).onDestroy(() => off.forEach((f) => f()));
 
@@ -106,7 +108,7 @@ export class Shell {
         for (const n of this.db.notifications.items()) {
           if (n.read || seen.has(n.id) || n.kind !== 'approval' || Date.parse(n.createdAt) < ch.at - 10000) continue;
           seen.add(n.id);
-          toast.info(`${n.title}. ${n.text}`, n.link ? { label: 'Відкрити', run: () => void this.router.navigateByUrl(n.link! + '#pogodzhennia') } : undefined);
+          toast.info(`${n.title}. ${n.text}`, n.link ? { label: L('Відкрити', 'Open'), run: () => void this.router.navigateByUrl(n.link! + '#pogodzhennia') } : undefined);
         }
       });
     });
@@ -121,7 +123,7 @@ export class Shell {
   openPalette(): void {
     if (this.paletteOpen) return;
     this.paletteOpen = true;
-    const ref = this.dialogs.open(CommandPalette, null, { size: 'md', top: true, label: 'Командна палітра' });
+    const ref = this.dialogs.open(CommandPalette, null, { size: 'md', top: true, label: L('Командна палітра', 'Command palette') });
     ref.closed.subscribe(() => (this.paletteOpen = false));
   }
 

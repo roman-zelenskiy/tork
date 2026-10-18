@@ -11,6 +11,7 @@ import { Switch, RadioGroup } from '../../shared/ui/checkbox';
 import { TimePicker } from '../../shared/ui/time-picker';
 import { Option } from '../../shared/ui/option';
 import { TEMPLATE_VARS } from '../../core/domain/messages';
+import { L } from '../../core/i18n';
 
 export type FieldType = 'text' | 'textarea' | 'mask' | 'number' | 'select' | 'multiselect' | 'switch' | 'time' | 'radio' | 'template';
 
@@ -53,7 +54,7 @@ export interface EntityFormData {
   template: `
     <div class="dlg-head items-center!">
       <h2 class="flex-1">{{ data.title }}</h2>
-      <button type="button" class="btn btn-ghost btn-icon" aria-label="Закрити" (click)="requestClose()"><svg [lucideIcon]="I.x" aria-hidden="true"></svg></button>
+      <button type="button" class="btn btn-ghost btn-icon" [attr.aria-label]="L('Закрити', 'Close')" (click)="requestClose()"><svg [lucideIcon]="I.x" aria-hidden="true"></svg></button>
     </div>
     <form class="flex min-h-0 flex-1 flex-col" novalidate (submit)="$event.preventDefault(); save()">
       <div class="dlg-body grid grid-cols-2 gap-x-3 gap-y-4">
@@ -71,7 +72,7 @@ export interface EntityFormData {
                   <tk-text-field [inputId]="id" [multiline]="true" [rows]="5" [maxLength]="480" [value]="str(f.key)" (valueChange)="set(f.key, $event)" [invalid]="!!err(f.key)" />
                   <div class="flex flex-wrap gap-1.5">
                     @for (v of vars; track v.key) {
-                      <button type="button" class="chip clickable hover:bg-muted" [attr.aria-label]="'Вставити ' + v.hint" (click)="set(f.key, str(f.key) + (str(f.key).endsWith(' ') || !str(f.key) ? '' : ' ') + v.key)">{{ v.key }}</button>
+                      <button type="button" class="chip clickable hover:bg-muted" [attr.aria-label]="L('Вставити ', 'Insert ') + v.hint" (click)="set(f.key, str(f.key) + (str(f.key).endsWith(' ') || !str(f.key) ? '' : ' ') + v.key)">{{ v.key }}</button>
                     }
                   </div>
                 }
@@ -82,10 +83,10 @@ export interface EntityFormData {
                   <tk-stepper [inputId]="id" [value]="num(f.key)" [min]="f.min ?? 0" [max]="f.max ?? 9999" [step]="f.step ?? 1" [decimals]="f.decimals ?? 0" [suffix]="f.suffix ?? null" (changed)="set(f.key, $event)" />
                 }
                 @case ('select') {
-                  <tk-select [inputId]="id" [options]="f.options ?? []" [value]="val(f.key)" (valueChange)="set(f.key, $event)" [invalid]="!!err(f.key)" [placeholder]="f.placeholder ?? 'Оберіть…'" />
+                  <tk-select [inputId]="id" [options]="f.options ?? []" [value]="val(f.key)" (valueChange)="set(f.key, $event)" [invalid]="!!err(f.key)" [placeholder]="f.placeholder ?? L('Оберіть…', 'Choose…')" />
                 }
                 @case ('multiselect') {
-                  <tk-select [inputId]="id" [multiple]="true" [options]="f.options ?? []" [values]="arr(f.key)" (valuesChange)="set(f.key, $event)" [invalid]="!!err(f.key)" [placeholder]="f.placeholder ?? 'Оберіть…'" />
+                  <tk-select [inputId]="id" [multiple]="true" [options]="f.options ?? []" [values]="arr(f.key)" (valuesChange)="set(f.key, $event)" [invalid]="!!err(f.key)" [placeholder]="f.placeholder ?? L('Оберіть…', 'Choose…')" />
                 }
                 @case ('radio') {
                   <tk-radio-group variant="segmented" [ariaLabel]="f.label" [options]="f.options ?? []" [value]="val(f.key)" (changed)="set(f.key, $event)" />
@@ -102,13 +103,14 @@ export interface EntityFormData {
         }
       </div>
       <div class="dlg-foot">
-        <button type="button" class="btn" (click)="requestClose()">Скасувати</button>
-        <button type="submit" class="btn btn-primary" [disabled]="saving()" [attr.aria-busy]="saving()">{{ data.submitLabel ?? 'Зберегти' }}</button>
+        <button type="button" class="btn" (click)="requestClose()">{{ L('Скасувати', 'Cancel') }}</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()" [attr.aria-busy]="saving()">{{ data.submitLabel ?? L('Зберегти', 'Save') }}</button>
       </div>
     </form>
   `,
 })
 export class EntityForm extends FormDialog<boolean> {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly vars = TEMPLATE_VARS;
   protected readonly data = inject<EntityFormData>(DIALOG_DATA);
@@ -143,7 +145,7 @@ export class EntityForm extends FormDialog<boolean> {
     for (const f of this.data.fields) {
       const v = m[f.key];
       const empty = v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length);
-      out[f.key] = f.required && empty ? 'Обов’язкове поле' : (f.validate?.(v, m) ?? null);
+      out[f.key] = f.required && empty ? L('Обов’язкове поле', 'Required field') : (f.validate?.(v, m) ?? null);
     }
     return out;
   }
@@ -152,7 +154,7 @@ export class EntityForm extends FormDialog<boolean> {
       const v = { ...this.model() };
       for (const f of this.data.fields) if (typeof v[f.key] === 'string') v[f.key] = (v[f.key] as string).trim();
       await this.data.save(v);
-      this.toast.success('Збережено');
+      this.toast.success(L('Збережено', 'Saved'));
       return true;
     });
   }

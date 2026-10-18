@@ -12,28 +12,29 @@ import { norm } from '../../shared/ui/option';
 import { downloadFile } from '../../shared/download';
 import { fmtAgo, fmtDateTime, fmtNum } from '../../shared/format';
 import { SettingsHeader } from './settings-header';
+import { L, STORE_PREFIX } from '../../core/i18n';
 
 const NAMES: Record<EntityKey, string> = {
-  branches: 'Філії',
-  posts: 'Пости',
-  employees: 'Співробітники',
-  clients: 'Клієнти',
-  cars: 'Авто',
-  orders: 'Наряди',
-  works: 'Нормо-години',
-  parts: 'Запчастини',
-  movements: 'Рух складу',
-  suppliers: 'Постачальники',
-  purchases: 'Закупівлі',
-  approvals: 'Погодження',
-  reminders: 'Нагадування',
-  rules: 'Правила ТО',
-  templates: 'Шаблони',
-  mailings: 'Розсилки',
-  activity: 'Журнал дій',
-  notifications: 'Сповіщення',
-  views: 'Збережені вигляди',
-  settings: 'Налаштування',
+  branches: L('Філії', 'Branches'),
+  posts: L('Пости', 'Bays'),
+  employees: L('Співробітники', 'Employees'),
+  clients: L('Клієнти', 'Customers'),
+  cars: L('Авто', 'Cars'),
+  orders: L('Наряди', 'Work orders'),
+  works: L('Нормо-години', 'Standard hours'),
+  parts: L('Запчастини', 'Parts'),
+  movements: L('Рух складу', 'Stock movements'),
+  suppliers: L('Постачальники', 'Suppliers'),
+  purchases: L('Закупівлі', 'Purchase orders'),
+  approvals: L('Погодження', 'Approvals'),
+  reminders: L('Нагадування', 'Reminders'),
+  rules: L('Правила ТО', 'Service rules'),
+  templates: L('Шаблони', 'Templates'),
+  mailings: L('Розсилки', 'Mailings'),
+  activity: L('Журнал дій', 'Activity log'),
+  notifications: L('Сповіщення', 'Notifications'),
+  views: L('Збережені вигляди', 'Saved views'),
+  settings: L('Налаштування', 'Settings'),
 };
 /** Орієнтовний ліміт localStorage (Chromium, Firefox — ~5 млн символів) */
 const QUOTA_BYTES = 10 * 1024 * 1024;
@@ -48,17 +49,17 @@ const QUOTA_BYTES = 10 * 1024 * 1024;
     <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
       <section class="card min-w-0 p-5" aria-labelledby="d-size">
         <div class="mb-4 flex flex-wrap items-baseline gap-x-3">
-          <h2 id="d-size" class="m-0 flex-1 text-[15px] font-semibold">Сховище браузера</h2>
-          <span class="text-[13px] text-ink-2 num">{{ mb(total()) }} з ~{{ mb(quota) }}</span>
+          <h2 id="d-size" class="m-0 flex-1 text-[15px] font-semibold">{{ L('Сховище браузера', 'Browser storage') }}</h2>
+          <span class="text-[13px] text-ink-2 num">{{ mb(total()) }} {{ L('з', 'of') }} ~{{ mb(quota) }}</span>
         </div>
-        <div class="mb-1 h-2.5 overflow-hidden rounded-full bg-muted" role="meter" aria-label="Заповненість сховища" [attr.aria-valuenow]="pct()" aria-valuemin="0" aria-valuemax="100">
+        <div class="mb-1 h-2.5 overflow-hidden rounded-full bg-muted" role="meter" [attr.aria-label]="L('Заповненість сховища', 'Storage usage')" [attr.aria-valuenow]="pct()" aria-valuemin="0" aria-valuemax="100">
           <div class="h-full rounded-full transition-[width] duration-300" [style.width.%]="pct()" [style.background]="pct() > 80 ? 'var(--danger)' : 'var(--viz-1)'"></div>
         </div>
-        <p class="m-0 mb-4 text-xs text-ink-3">Усі дані CRM зберігаються лише в цьому браузері (localStorage, ключі з префіксом <span class="mono">tork:</span>). Фото стискаються перед збереженням.</p>
+        <p class="m-0 mb-4 text-xs text-ink-3">{{ L('Усі дані CRM зберігаються лише в цьому браузері (localStorage, ключі з префіксом', 'All CRM data is stored only in this browser (localStorage, keys prefixed with') }} <span class="mono">{{ prefix }}</span>). {{ L('Фото стискаються перед збереженням.', 'Photos are compressed before saving.') }}</p>
         @if (db.ready()) {
           <div class="overflow-x-auto">
             <table class="tbl">
-              <thead><tr><th>Сутність</th><th>Ключ</th><th class="text-right">Записів</th><th class="text-right">Обсяг</th><th class="w-32"><span class="sr-only">Частка</span></th></tr></thead>
+              <thead><tr><th>{{ L('Сутність', 'Entity') }}</th><th>{{ L('Ключ', 'Key') }}</th><th class="text-right">{{ L('Записів', 'Records') }}</th><th class="text-right">{{ L('Обсяг', 'Size') }}</th><th class="w-32"><span class="sr-only">{{ L('Частка', 'Share') }}</span></th></tr></thead>
               <tbody>
                 @for (r of rows(); track r.key) {
                   <tr>
@@ -79,11 +80,11 @@ const QUOTA_BYTES = 10 * 1024 * 1024;
 
       <div class="flex min-w-0 flex-col gap-5">
         <section class="card flex flex-col gap-3 p-5" aria-labelledby="d-io">
-          <h2 id="d-io" class="m-0 text-[15px] font-semibold">Резервна копія</h2>
-          <p class="m-0 text-[13px] text-ink-2">Один JSON-файл з усіма сутностями. Імпорт повністю замінює поточні дані.</p>
+          <h2 id="d-io" class="m-0 text-[15px] font-semibold">{{ L('Резервна копія', 'Backup') }}</h2>
+          <p class="m-0 text-[13px] text-ink-2">{{ L('Один JSON-файл з усіма сутностями. Імпорт повністю замінює поточні дані.', 'One JSON file with every entity. Importing fully replaces the current data.') }}</p>
           <div class="flex flex-wrap gap-2">
-            <button type="button" class="btn" [disabled]="!db.ready()" (click)="exportJson()"><svg [lucideIcon]="I.download" aria-hidden="true"></svg>Експорт JSON</button>
-            <button type="button" class="btn" [disabled]="!db.ready() || busy()" (click)="file.click()"><svg [lucideIcon]="I.upload" aria-hidden="true"></svg>Імпорт JSON</button>
+            <button type="button" class="btn" [disabled]="!db.ready()" (click)="exportJson()"><svg [lucideIcon]="I.download" aria-hidden="true"></svg>{{ L('Експорт JSON', 'Export JSON') }}</button>
+            <button type="button" class="btn" [disabled]="!db.ready() || busy()" (click)="file.click()"><svg [lucideIcon]="I.upload" aria-hidden="true"></svg>{{ L('Імпорт JSON', 'Import JSON') }}</button>
             <input #file type="file" accept="application/json,.json" class="sr-only" tabindex="-1" aria-hidden="true" (change)="importJson(file)" />
           </div>
           @if (importError()) {
@@ -92,25 +93,25 @@ const QUOTA_BYTES = 10 * 1024 * 1024;
         </section>
 
         <section class="card flex flex-col gap-3 p-5" aria-labelledby="d-reset">
-          <h2 id="d-reset" class="m-0 text-[15px] font-semibold">Почати заново</h2>
+          <h2 id="d-reset" class="m-0 text-[15px] font-semibold">{{ L('Почати заново', 'Start over') }}</h2>
           <button type="button" class="btn justify-start" [disabled]="!db.ready() || busy()" (click)="resetDemo()">
-            <svg [lucideIcon]="I.undo" aria-hidden="true"></svg>Скинути до демо-даних
+            <svg [lucideIcon]="I.undo" aria-hidden="true"></svg>{{ L('Скинути до демо-даних', 'Reset to demo data') }}
           </button>
-          <p class="-mt-1 m-0 text-xs text-ink-3">Згенерувати мережу з двох філій, клієнтів і нарядів відносно сьогоднішньої дати.</p>
+          <p class="-mt-1 m-0 text-xs text-ink-3">{{ L('Згенерувати мережу з двох філій, клієнтів і нарядів відносно сьогоднішньої дати.', 'Generate a two-branch network with customers and work orders relative to today.') }}</p>
           <button type="button" class="btn btn-danger justify-start" [disabled]="!db.ready() || busy()" (click)="clean()">
-            <svg [lucideIcon]="I.trash" aria-hidden="true"></svg>Почати з чистої бази
+            <svg [lucideIcon]="I.trash" aria-hidden="true"></svg>{{ L('Почати з чистої бази', 'Start with a clean database') }}
           </button>
-          <p class="-mt-1 m-0 text-xs text-ink-3">Лишаються одна філія, пости, нормо-години, шаблони й правила ТО.</p>
+          <p class="-mt-1 m-0 text-xs text-ink-3">{{ L('Лишаються одна філія, пости, нормо-години, шаблони й правила ТО.', 'Keeps one branch, its bays, standard hours, templates and service rules.') }}</p>
         </section>
       </div>
 
       <section class="card min-w-0 p-5 xl:col-span-2" aria-labelledby="d-log">
         <div class="mb-3 flex flex-wrap items-center gap-3">
-          <h2 id="d-log" class="m-0 flex-1 text-[15px] font-semibold">Журнал дій <span class="text-ink-3 num">{{ log().length }}</span></h2>
-          <tk-text-field class="w-full sm:w-64" size="sm" type="search" [icon]="I.search" placeholder="Пошук у журналі" ariaLabel="Пошук у журналі" [clearable]="true" [(value)]="query" />
+          <h2 id="d-log" class="m-0 flex-1 text-[15px] font-semibold">{{ L('Журнал дій', 'Activity log') }} <span class="text-ink-3 num">{{ log().length }}</span></h2>
+          <tk-text-field class="w-full sm:w-64" size="sm" type="search" [icon]="I.search" [placeholder]="L('Пошук у журналі', 'Search the log')" [ariaLabel]="L('Пошук у журналі', 'Search the log')" [clearable]="true" [(value)]="query" />
         </div>
         @if (db.ready() && log().length) {
-          <cdk-virtual-scroll-viewport itemSize="44" class="h-80 rounded-lg border border-line" tabindex="0" aria-label="Записи журналу дій">
+          <cdk-virtual-scroll-viewport itemSize="44" class="h-80 rounded-lg border border-line" tabindex="0" [attr.aria-label]="L('Записи журналу дій', 'Activity log entries')">
             <div *cdkVirtualFor="let a of log(); trackBy: trackId" class="flex h-11 items-center gap-3 border-b border-line px-3 text-[13px]">
               <span class="badge flex-none">{{ action(a) }}</span>
               <span class="min-w-0 flex-1 truncate-1">{{ a.summary }}</span>
@@ -118,13 +119,15 @@ const QUOTA_BYTES = 10 * 1024 * 1024;
             </div>
           </cdk-virtual-scroll-viewport>
         } @else {
-          <p class="m-0 text-[13px] text-ink-3">{{ db.ready() ? 'Записів не знайдено' : 'Завантаження…' }}</p>
+          <p class="m-0 text-[13px] text-ink-3">{{ db.ready() ? L('Записів не знайдено', 'No records found') : L('Завантаження…', 'Loading…') }}</p>
         }
       </section>
     </div>
   `,
 })
 export class DataPage {
+  protected readonly L = L;
+  protected readonly prefix = STORE_PREFIX;
   protected readonly I = I;
   protected readonly db = inject(DbService);
   private readonly storage = inject(StorageService);
@@ -155,22 +158,25 @@ export class DataPage {
   });
 
   protected kb(b: number): string {
-    return b < 1024 ? `${b} Б` : `${fmtNum(Math.round(b / 1024))} КБ`;
+    return b < 1024 ? `${b} ${L('Б', 'B')}` : `${fmtNum(Math.round(b / 1024))} ${L('КБ', 'KB')}`;
   }
   protected mb(b: number): string {
-    return `${(b / 1024 / 1024).toFixed(1).replace('.', ',')} МБ`;
+    return L(`${(b / 1024 / 1024).toFixed(1).replace('.', ',')} МБ`, `${(b / 1024 / 1024).toFixed(1)} MB`);
   }
   protected ago(iso: string): string {
     return fmtAgo(iso);
   }
   protected action(a: ActivityEntry): string {
-    return { create: 'створено', update: 'зміна', delete: 'видалено', status: 'статус', stock: 'склад', message: 'повідомлення', import: 'дані' }[a.action];
+    return L(
+      { create: 'створено', update: 'зміна', delete: 'видалено', status: 'статус', stock: 'склад', message: 'повідомлення', import: 'дані' },
+      { create: 'created', update: 'changed', delete: 'deleted', status: 'status', stock: 'stock', message: 'message', import: 'data' },
+    )[a.action];
   }
 
   protected exportJson(): void {
     const data = this.db.exportAll();
     downloadFile(`tork-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 1), 'application/json');
-    this.toast.success('Резервну копію збережено');
+    this.toast.success(L('Резервну копію збережено', 'Backup saved'));
   }
 
   protected async importJson(input: HTMLInputElement): Promise<void> {
@@ -182,43 +188,46 @@ export class DataPage {
     try {
       data = JSON.parse(await f.text());
     } catch {
-      this.importError.set('Файл не є коректним JSON.');
+      this.importError.set(L('Файл не є коректним JSON.', 'The file isn’t valid JSON.'));
       return;
     }
     const keys = Object.keys(ENTITY_KEYS) as EntityKey[];
     const bad = keys.filter((k) => data[k] !== undefined && !Array.isArray(data[k]));
     const known = keys.filter((k) => Array.isArray(data[k]));
     if (bad.length || !known.length || !Array.isArray(data['settings']) || !(data['settings'] as unknown[]).length) {
-      this.importError.set('Це не схоже на експорт «Торка»: немає налаштувань або сутності мають неправильний формат.');
+      this.importError.set(L('Це не схоже на експорт «Торка»: немає налаштувань або сутності мають неправильний формат.', 'This doesn’t look like a Tork export: settings are missing or entities have the wrong format.'));
       return;
     }
     const broken = known.find((k) => (data[k] as unknown[]).some((x) => !x || typeof x !== 'object' || typeof (x as { id?: unknown }).id !== 'string'));
     if (broken) {
-      this.importError.set(`У розділі «${NAMES[broken]}» є записи без id.`);
+      this.importError.set(L(`У розділі «${NAMES[broken]}» є записи без id.`, `“${NAMES[broken]}” has records without an id.`));
       return;
     }
     const n = (data['orders'] as unknown[] | undefined)?.length ?? 0;
     const ok = await this.dialogs.confirm({
-      title: 'Замінити всі дані з файлу?',
-      text: `${f.name}: ${n} нарядів, ${(data['clients'] as unknown[] | undefined)?.length ?? 0} клієнтів. Поточні дані буде втрачено — спершу зробіть експорт, якщо вони потрібні.`,
-      confirm: 'Імпортувати',
+      title: L('Замінити всі дані з файлу?', 'Replace all data from the file?'),
+      text: L(
+        `${f.name}: ${n} нарядів, ${(data['clients'] as unknown[] | undefined)?.length ?? 0} клієнтів. Поточні дані буде втрачено — спершу зробіть експорт, якщо вони потрібні.`,
+        `${f.name}: ${n} work orders, ${(data['clients'] as unknown[] | undefined)?.length ?? 0} customers. Current data will be lost — export it first if you need it.`,
+      ),
+      confirm: L('Імпортувати', 'Import'),
       danger: true,
     });
     if (!ok) return;
     await this.run(async () => {
-      this.db.importAll(data as never, `Імпорт з файлу ${f.name}`);
-      this.toast.success('Дані імпортовано');
+      this.db.importAll(data as never, L(`Імпорт з файлу ${f.name}`, `Import from ${f.name}`));
+      this.toast.success(L('Дані імпортовано', 'Data imported'));
     });
   }
 
   protected async resetDemo(): Promise<void> {
-    const ok = await this.dialogs.confirm({ title: 'Скинути до демо-даних?', text: 'Усі ваші зміни буде замінено свіжими демо-даними.', confirm: 'Скинути', danger: true });
-    if (ok) await this.run(async () => (await this.db.seedDemo(), this.toast.success('Демо-дані згенеровано')));
+    const ok = await this.dialogs.confirm({ title: L('Скинути до демо-даних?', 'Reset to demo data?'), text: L('Усі ваші зміни буде замінено свіжими демо-даними.', 'All your changes will be replaced with fresh demo data.'), confirm: L('Скинути', 'Reset'), danger: true });
+    if (ok) await this.run(async () => (await this.db.seedDemo(), this.toast.success(L('Демо-дані згенеровано', 'Demo data generated'))));
   }
 
   protected async clean(): Promise<void> {
-    const ok = await this.dialogs.confirm({ title: 'Почати з чистої бази?', text: 'Буде видалено клієнтів, авто, наряди, склад і журнали. Цю дію не можна скасувати.', confirm: 'Очистити', danger: true });
-    if (ok) await this.run(async () => (await this.db.clean(), this.toast.success('Базу очищено')));
+    const ok = await this.dialogs.confirm({ title: L('Почати з чистої бази?', 'Start with a clean database?'), text: L('Буде видалено клієнтів, авто, наряди, склад і журнали. Цю дію не можна скасувати.', 'Customers, cars, work orders, stock and logs will be deleted. This can’t be undone.'), confirm: L('Очистити', 'Clear'), danger: true });
+    if (ok) await this.run(async () => (await this.db.clean(), this.toast.success(L('Базу очищено', 'Database cleared'))));
   }
 
   private async run(fn: () => Promise<unknown>): Promise<void> {

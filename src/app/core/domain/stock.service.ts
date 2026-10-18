@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { DbService } from '../data/db.service';
-import { Order, OrderPart, Part, StockMovement } from '../data/models';
+import { Order, OrderPart, PURCHASE_PREFIX, Part, StockMovement } from '../data/models';
 import { newId, nowIso } from '../data/util';
+import { L, unitLabel } from '../i18n';
 
 /**
  * Склад по філіях: доступно = залишок − резерв. Резерв під наряд, видача (списання),
@@ -42,7 +43,7 @@ export class StockService {
       if (!p || this.available(p, o.branchId) < l.qty) return l;
       const next = { ...p, reserved: { ...p.reserved, [o.branchId]: (p.reserved[o.branchId] ?? 0) + l.qty } };
       touched.set(p.id, next);
-      moves.push(this.mv(p.id, 'reserve', l.qty, o.branchId, o.id, `Резерв під наряд ${o.number}`));
+      moves.push(this.mv(p.id, 'reserve', l.qty, o.branchId, o.id, L(`Резерв під наряд ${o.number}`, `Reserved for ${o.number}`)));
       return { ...l, reserved: true };
     });
     await this.commit(touched, moves);
@@ -65,7 +66,7 @@ export class StockService {
         reserved: { ...p.reserved, [o.branchId]: Math.max(0, (p.reserved[o.branchId] ?? 0) - (l.reserved ? l.qty : 0)) },
       };
       touched.set(p.id, next);
-      moves.push(this.mv(p.id, 'out', l.qty, o.branchId, o.id, `Видано в наряд ${o.number}`));
+      moves.push(this.mv(p.id, 'out', l.qty, o.branchId, o.id, L(`Видано в наряд ${o.number}`, `Issued to ${o.number}`)));
       return { ...l, reserved: false, issued: true };
     });
     await this.commit(touched, moves);
@@ -84,11 +85,11 @@ export class StockService {
       let next = p;
       if (l.reserved) {
         next = { ...next, reserved: { ...next.reserved, [o.branchId]: Math.max(0, (next.reserved[o.branchId] ?? 0) - l.qty) } };
-        moves.push(this.mv(p.id, 'release', l.qty, o.branchId, o.id, `Знято резерв: ${o.number}`));
+        moves.push(this.mv(p.id, 'release', l.qty, o.branchId, o.id, L(`Знято резерв: ${o.number}`, `Reservation released: ${o.number}`)));
       }
       if (withIssued && l.issued) {
         next = { ...next, stock: { ...next.stock, [o.branchId]: (next.stock[o.branchId] ?? 0) + l.qty } };
-        moves.push(this.mv(p.id, 'in', l.qty, o.branchId, o.id, `Повернення з наряду ${o.number}`));
+        moves.push(this.mv(p.id, 'in', l.qty, o.branchId, o.id, L(`Повернення з наряду ${o.number}`, `Returned from ${o.number}`)));
       }
       touched.set(p.id, next);
       return { ...l, reserved: false, issued: withIssued ? false : l.issued };
@@ -103,13 +104,13 @@ export class StockService {
     const stock = { ...p.stock };
     if (type === 'in') stock[branchId] = (stock[branchId] ?? 0) + qty;
     else {
-      if (this.available(p, branchId) < qty) throw new Error(`Доступно лише ${this.available(p, branchId)} ${p.unit} — решта в резерві або відсутня`);
+      if (this.available(p, branchId) < qty) throw new Error(L(`Доступно лише ${this.available(p, branchId)} ${p.unit} — решта в резерві або відсутня`, `Only ${this.available(p, branchId)} ${unitLabel(p.unit)} available — the rest is reserved or out of stock`));
       stock[branchId] = (stock[branchId] ?? 0) - qty;
       if (type === 'transfer' && toBranchId) stock[toBranchId] = (stock[toBranchId] ?? 0) + qty;
     }
     const next: Part = { ...p, stock };
     await this.commit(new Map([[p.id, next]]), [this.mv(p.id, type, qty, branchId, null, note, toBranchId)]);
-    const label = type === 'in' ? 'Надходження' : type === 'writeoff' ? 'Списання' : 'Переміщення';
+    const label = type === 'in' ? L('Надходження', 'Receipt') : type === 'writeoff' ? L('Списання', 'Write-off') : L('Переміщення', 'Transfer');
     this.db.log('parts', p.id, 'stock', `${label}: ${p.brand} ${p.sku} × ${qty}`);
     if (type !== 'in') await this.checkLow([next], branchId);
   }
@@ -130,16 +131,19 @@ export class StockService {
       } else {
         const n = this.db.purchases.items().reduce((m, x) => Math.max(m, Number(x.number.replace(/\D/g, '')) || 0), 100) + 1;
         await this.db.purchases.create(
-          { number: `ЗАМ-${n}`, supplierId, branchId, status: 'draft', lines: [{ partId: p.id, qty, cost: p.cost }], auto: true },
-          { log: `Автоматична чернетка замовлення ЗАМ-${n}` },
+          { number: `${PURCHASE_PREFIX}${n}`, supplierId, branchId, status: 'draft', lines: [{ partId: p.id, qty, cost: p.cost }], auto: true },
+          { log: L(`Автоматична чернетка замовлення ЗАМ-${n}`, `Automatic purchase order draft PO-${n}`) },
         );
       }
-      const title = `Закінчується ${p.brand} ${p.sku}`;
+      const title = L(`Закінчується ${p.brand} ${p.sku}`, `Running low: ${p.brand} ${p.sku}`);
       if (this.db.notifications.items().some((n) => !n.read && n.title === title)) continue;
       await this.db.notify({
         kind: 'stock',
         title,
-        text: `${p.name}: доступно ${this.available(p, branchId)} ${p.unit} (${branch}), мінімум ${p.minStock}. Додано в чернетку замовлення.`,
+        text: L(
+          `${p.name}: доступно ${this.available(p, branchId)} ${p.unit} (${branch}), мінімум ${p.minStock}. Додано в чернетку замовлення.`,
+          `${p.name}: ${this.available(p, branchId)} ${unitLabel(p.unit)} available (${branch}), minimum ${p.minStock}. Added to a purchase order draft.`,
+        ),
         link: '/sklad/zakupivli',
       });
     }

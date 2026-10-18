@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { Channel } from '../../core/data/models';
+import { BRAND, L } from '../../core/i18n';
 
 /** Прев’ю повідомлення на екрані телефона: бульбашка SMS або Viber */
 @Component({
   selector: 'tk-message-preview',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block', role: 'img', '[attr.aria-label]': '"Прев’ю повідомлення: " + text()' },
+  host: { class: 'block', role: 'img', '[attr.aria-label]': 'L("Прев’ю повідомлення: ", "Message preview: ") + text()' },
   template: `
     <div class="mx-auto w-[240px] rounded-[28px] border-[6px] border-[#26231f] bg-[#26231f] shadow-pop">
       <div class="overflow-hidden rounded-[22px]" [style.background]="channel() === 'viber' ? '#f4f1fb' : '#f2f2f4'">
@@ -17,7 +18,7 @@ import { Channel } from '../../core/data/models';
         <div class="min-h-[220px] p-3">
           <div class="max-w-[92%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-[12px] leading-[1.45] break-words text-[#26231f] shadow-sm">
             {{ text() }}
-            <div class="mt-1 text-right text-[10px] text-[#8a867f]">зараз</div>
+            <div class="mt-1 text-right text-[10px] text-[#8a867f]">{{ L('зараз', 'now') }}</div>
           </div>
         </div>
       </div>
@@ -25,7 +26,8 @@ import { Channel } from '../../core/data/models';
   `,
 })
 export class MessagePreview {
+  protected readonly L = L;
   readonly channel = input<Channel>('viber');
   readonly text = input('');
-  readonly sender = input('Торк');
+  readonly sender = input(BRAND);
 }

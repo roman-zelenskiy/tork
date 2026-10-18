@@ -3,6 +3,7 @@ import { DialogRef } from '@angular/cdk/dialog';
 import { Icon } from '../shared/ui/icon';
 import { I } from '../shared/icons';
 import { HotkeysService } from '../core/ui/hotkeys.service';
+import { L } from '../core/i18n';
 
 @Component({
   selector: 'tk-shortcuts-dialog',
@@ -10,8 +11,8 @@ import { HotkeysService } from '../core/ui/hotkeys.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="dlg-head items-center!">
-      <h2 class="flex-1">Гарячі клавіші</h2>
-      <button type="button" class="btn btn-ghost btn-icon" aria-label="Закрити" (click)="ref.close()">
+      <h2 class="flex-1">{{ L('Гарячі клавіші', 'Keyboard shortcuts') }}</h2>
+      <button type="button" class="btn btn-ghost btn-icon" [attr.aria-label]="L('Закрити', 'Close')" (click)="ref.close()">
         <svg [lucideIcon]="I.x" aria-hidden="true"></svg>
       </button>
     </div>
@@ -21,13 +22,14 @@ import { HotkeysService } from '../core/ui/hotkeys.service';
           <dt class="text-ink-2">{{ h.description }}</dt>
           <dd class="m-0"><span class="kbd">{{ hk.label(h.combo) }}</span></dd>
         }
-        <dt class="text-ink-2">Скасувати останню дію на табло</dt>
+        <dt class="text-ink-2">{{ L('Скасувати останню дію на табло', 'Undo the last change on the bay board') }}</dt>
         <dd class="m-0"><span class="kbd">{{ hk.label('mod+z') }}</span></dd>
       </dl>
     </div>
   `,
 })
 export class ShortcutsDialog {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly hk = inject(HotkeysService);
   protected readonly ref = inject(DialogRef);

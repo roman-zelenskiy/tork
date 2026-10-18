@@ -1,5 +1,6 @@
 import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { L, STORE_PREFIX } from '../i18n';
 
 export type StorageProblem = 'unavailable' | 'quota' | null;
 
@@ -8,8 +9,11 @@ export class StorageError extends Error {
   constructor(public readonly reason: 'unavailable' | 'quota') {
     super(
       reason === 'quota'
-        ? 'Сховище браузера заповнене. Видаліть фото чи старі наряди або експортуйте дані й почніть з чистої бази.'
-        : 'Браузер не дозволяє зберігати дані. Зміни діятимуть лише до закриття вкладки.',
+        ? L(
+            'Сховище браузера заповнене. Видаліть фото чи старі наряди або експортуйте дані й почніть з чистої бази.',
+            'Browser storage is full. Delete photos or old work orders, or export your data and start with a clean database.',
+          )
+        : L('Браузер не дозволяє зберігати дані. Зміни діятимуть лише до закриття вкладки.', 'The browser doesn’t allow saving data. Changes will last only until you close the tab.'),
     );
   }
 }
@@ -93,13 +97,13 @@ export class StorageService {
     return (this.readRaw(key)?.length ?? 0) * 2;
   }
 
-  /** Усі ключі з префіксом tork: */
+  /** Усі ключі з префіксом поточної мови (tork: чи tork-en:) */
   keys(): string[] {
-    if (!this.available()) return [...this.memory.keys()].filter((k) => k.startsWith('tork:'));
+    if (!this.available()) return [...this.memory.keys()].filter((k) => k.startsWith(STORE_PREFIX));
     const out: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k?.startsWith('tork:')) out.push(k);
+      if (k?.startsWith(STORE_PREFIX)) out.push(k);
     }
     return out;
   }

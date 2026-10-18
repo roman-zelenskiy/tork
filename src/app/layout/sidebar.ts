@@ -8,6 +8,7 @@ import { ThemeService } from '../core/ui/theme.service';
 import { AppContext } from '../core/ui/app-context.service';
 import { isOpen } from '../core/domain/order-math';
 import { RemindersService } from '../core/domain/reminders.service';
+import { L } from '../core/i18n';
 
 interface NavItem {
   label: string;
@@ -26,7 +27,7 @@ interface NavItem {
   host: { class: 'sidebar flex h-full flex-col' },
   template: `
     <div class="flex h-14 flex-none items-center gap-2.5 px-3.5">
-      <a routerLink="/" class="flex min-w-0 items-center gap-2.5 rounded-md" aria-label="Торк — на головну" (click)="navigate.emit()">
+      <a routerLink="/" class="flex min-w-0 items-center gap-2.5 rounded-md" [attr.aria-label]="L('Торк — на головну', 'Tork — home')" (click)="navigate.emit()">
         <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" class="flex-none">
           <rect width="32" height="32" rx="8" fill="var(--accent)" />
           <path
@@ -35,11 +36,11 @@ interface NavItem {
           />
           <circle cx="16" cy="16" r="3.6" fill="var(--accent)" />
         </svg>
-        <span class="sb-label text-[15px] font-semibold tracking-[-0.01em]">Торк</span>
+        <span class="sb-label text-[15px] font-semibold tracking-[-0.01em]">{{ L('Торк', 'Tork') }}</span>
       </a>
     </div>
 
-    <nav class="flex-1 overflow-y-auto px-2 pb-2" aria-label="Розділи">
+    <nav class="flex-1 overflow-y-auto px-2 pb-2" [attr.aria-label]="L('Розділи', 'Sections')">
       @for (group of groups; track $index) {
         @if ($index) {
           <div class="mx-2 my-2 h-px bg-line" role="separator"></div>
@@ -60,7 +61,7 @@ interface NavItem {
                 <svg [lucideIcon]="item.icon" [size]="18" aria-hidden="true"></svg>
                 <span class="sb-label flex-1 truncate-1">{{ item.label }}</span>
                 @if (item.badge && item.badge(); as n) {
-                  <span class="nav-badge num" [class.nav-badge-danger]="item.badgeTone === 'danger'" [attr.aria-label]="n + ' нових'">{{ n }}</span>
+                  <span class="nav-badge num" [class.nav-badge-danger]="item.badgeTone === 'danger'" [attr.aria-label]="n + L(' нових', ' new')">{{ n }}</span>
                 }
               </a>
             </li>
@@ -74,9 +75,9 @@ interface NavItem {
         {{ ctx.branch()?.name ?? '' }}
       </div>
       @if (!mobile()) {
-        <button type="button" class="nav-link w-full" (click)="theme.toggleSidebar()" [attr.aria-label]="collapsed() ? 'Розгорнути меню' : 'Згорнути меню'" [tkTip]="collapsed() ? 'Розгорнути меню' : ''" tipSide="right">
+        <button type="button" class="nav-link w-full" (click)="theme.toggleSidebar()" [attr.aria-label]="collapsed() ? L('Розгорнути меню', 'Expand menu') : L('Згорнути меню', 'Collapse menu')" [tkTip]="collapsed() ? L('Розгорнути меню', 'Expand menu') : ''" tipSide="right">
           <svg [lucideIcon]="collapsed() ? I.sidebarOpen : I.sidebarClose" [size]="18" aria-hidden="true"></svg>
-          <span class="sb-label flex-1 text-left">Згорнути</span>
+          <span class="sb-label flex-1 text-left">{{ L('Згорнути', 'Collapse') }}</span>
           <span class="sb-label kbd">[</span>
         </button>
       }
@@ -84,6 +85,7 @@ interface NavItem {
   `,
 })
 export class Sidebar {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly theme = inject(ThemeService);
   protected readonly ctx = inject(AppContext);
@@ -107,19 +109,19 @@ export class Sidebar {
 
   protected readonly groups: NavItem[][] = [
     [
-      { label: 'Огляд', link: '/', icon: I.dashboard, exact: true },
-      { label: 'Табло постів', link: '/tablo', icon: I.calendarClock },
-      { label: 'Наряди', link: '/naryady', icon: I.clipboardList, badge: () => this.openOrders() },
+      { label: L('Огляд', 'Overview'), link: '/', icon: I.dashboard, exact: true },
+      { label: L('Табло постів', 'Bay board'), link: '/tablo', icon: I.calendarClock },
+      { label: L('Наряди', 'Work orders'), link: '/naryady', icon: I.clipboardList, badge: () => this.openOrders() },
     ],
     [
-      { label: 'Клієнти', link: '/kliyenty', icon: I.users },
-      { label: 'Нагадування', link: '/nahaduvannia', icon: I.bellRing, badge: () => this.dueReminders() },
-      { label: 'Склад', link: '/sklad', icon: I.boxes, badge: () => this.lowStock(), badgeTone: 'danger' },
-      { label: 'Механіки', link: '/mekhaniky', icon: I.wrench },
+      { label: L('Клієнти', 'Customers'), link: '/kliyenty', icon: I.users },
+      { label: L('Нагадування', 'Reminders'), link: '/nahaduvannia', icon: I.bellRing, badge: () => this.dueReminders() },
+      { label: L('Склад', 'Stock'), link: '/sklad', icon: I.boxes, badge: () => this.lowStock(), badgeTone: 'danger' },
+      { label: L('Механіки', 'Mechanics'), link: '/mekhaniky', icon: I.wrench },
     ],
     [
-      { label: 'Довідники', link: '/dovidnyky', icon: I.list },
-      { label: 'Налаштування', link: '/nalashtuvannia', icon: I.settings },
+      { label: L('Довідники', 'Directories'), link: '/dovidnyky', icon: I.list },
+      { label: L('Налаштування', 'Settings'), link: '/nalashtuvannia', icon: I.settings },
     ],
   ];
 }

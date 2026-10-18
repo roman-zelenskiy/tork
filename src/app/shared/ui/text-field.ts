@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, input, model,
 import { Icon } from './icon';
 import { I, IconNode } from '../icons';
 import { formatPlate, normalizePlate, PLATE_LETTERS } from '../../core/data/plates';
+import { L, locale } from '../../core/i18n';
 
 export type Mask = 'phone' | 'plate' | 'vin' | 'money' | null;
 
@@ -41,17 +42,17 @@ const MASKS: Record<Exclude<Mask, null>, { toValue: (s: string) => string; toDis
     },
     toDisplay: (v) => (v.length > 6 ? formatPlate(v) : v.length > 2 ? `${v.slice(0, 2)} ${v.slice(2)}` : v),
     inputmode: 'text',
-    placeholder: 'КА 4821 ВІ',
+    placeholder: L('КА 4821 ВІ', 'KA 4821 BI'),
   },
   vin: {
     toValue: (s) => s.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, '').slice(0, 17),
     toDisplay: (v) => v,
     inputmode: 'text',
-    placeholder: '17 символів, без I, O, Q',
+    placeholder: L('17 символів, без I, O, Q', '17 characters, no I, O or Q'),
   },
   money: {
     toValue: (s) => s.replace(/[^\d]/g, '').replace(/^0+(?=\d)/, '').slice(0, 9),
-    toDisplay: (v) => (v ? new Intl.NumberFormat('uk-UA').format(Number(v)) : ''),
+    toDisplay: (v) => (v ? new Intl.NumberFormat(locale).format(Number(v)) : ''),
     inputmode: 'numeric',
     placeholder: '0',
   },
@@ -115,7 +116,7 @@ const MASKS: Record<Exclude<Mask, null>, { toValue: (s: string) => string; toDis
         <span class="flex-none text-xs text-ink-3 num" aria-hidden="true">{{ value().length }}/17</span>
       }
       @if (clearable() && value() && !disabled()) {
-        <button type="button" class="-mr-1 grid size-6 place-items-center rounded-md text-ink-3 hover:bg-subtle hover:text-ink" aria-label="Очистити поле" (click)="clear()">
+        <button type="button" class="-mr-1 grid size-6 place-items-center rounded-md text-ink-3 hover:bg-subtle hover:text-ink" [attr.aria-label]="L('Очистити поле', 'Clear field')" (click)="clear()">
           <svg [lucideIcon]="I.x" [size]="14" aria-hidden="true"></svg>
         </button>
       }
@@ -123,6 +124,7 @@ const MASKS: Record<Exclude<Mask, null>, { toValue: (s: string) => string; toDis
   `,
 })
 export class TextField {
+  protected readonly L = L;
   protected readonly I = I;
   readonly value = model('');
   readonly mask = input<Mask>(null);

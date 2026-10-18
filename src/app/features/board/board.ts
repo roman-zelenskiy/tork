@@ -18,8 +18,9 @@ import { DatePicker } from '../../shared/ui/date-picker';
 import { Tooltip } from '../../shared/ui/tooltip';
 import { Option } from '../../shared/ui/option';
 import { statusBg, statusColor } from '../../shared/ui/status';
-import { addDays, fmtDayLong, fmtDuration, fmtWeekday, minToHHMM, sameDay, startOfDay, toMin, ymd } from '../../shared/format';
+import { addDays, fmtDayLong, fmtDuration, fmtWeekday, minToHHMM, plural, sameDay, startOfDay, toMin, ymd } from '../../shared/format';
 import { OrderCreateDialog } from '../orders/order-create';
+import { BRAND, L } from '../../core/i18n';
 
 /** Ширина 15-хвилинного слота й висота рядка поста, px */
 const SLOT = 22;
@@ -53,26 +54,26 @@ interface UndoEntry {
   imports: [Icon, PageHeader, EmptyState, RadioGroup, DatePicker, Tooltip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <tk-page-header title="Табло постів" [subtitle]="subtitle()">
-      <button type="button" class="btn" [disabled]="!undoStack().length" (click)="undo()" [tkTip]="'Скасувати перенесення (' + hk.label('mod+z') + ')'">
-        <svg [lucideIcon]="I.undo" aria-hidden="true"></svg>Скасувати
+    <tk-page-header [title]="L('Табло постів', 'Bay board')" [subtitle]="subtitle()">
+      <button type="button" class="btn" [disabled]="!undoStack().length" (click)="undo()" [tkTip]="L('Скасувати перенесення', 'Undo move') + ' (' + hk.label('mod+z') + ')'">
+        <svg [lucideIcon]="I.undo" aria-hidden="true"></svg>{{ L('Скасувати', 'Undo') }}
         @if (undoStack().length) {
           <span class="text-ink-3 num">{{ undoStack().length }}</span>
         }
       </button>
-      <button type="button" class="btn btn-primary" (click)="quickBook(null)"><svg [lucideIcon]="I.plus" aria-hidden="true"></svg>Записати</button>
+      <button type="button" class="btn btn-primary" (click)="quickBook(null)"><svg [lucideIcon]="I.plus" aria-hidden="true"></svg>{{ L('Записати', 'Book') }}</button>
     </tk-page-header>
 
     <div class="mb-4 flex flex-wrap items-center gap-2">
       <div class="flex items-center gap-1">
-        <button type="button" class="btn btn-icon" [attr.aria-label]="view() === 'day' ? 'Попередній день' : 'Попередній тиждень'" (click)="shift(-1)"><svg [lucideIcon]="I.chevronLeft" aria-hidden="true"></svg></button>
-        <button type="button" class="btn" (click)="goToday()" [disabled]="isToday() && view() === 'day'">Сьогодні</button>
-        <button type="button" class="btn btn-icon" [attr.aria-label]="view() === 'day' ? 'Наступний день' : 'Наступний тиждень'" (click)="shift(1)"><svg [lucideIcon]="I.chevronRight" aria-hidden="true"></svg></button>
+        <button type="button" class="btn btn-icon" [attr.aria-label]="view() === 'day' ? L('Попередній день', 'Previous day') : L('Попередній тиждень', 'Previous week')" (click)="shift(-1)"><svg [lucideIcon]="I.chevronLeft" aria-hidden="true"></svg></button>
+        <button type="button" class="btn" (click)="goToday()" [disabled]="isToday() && view() === 'day'">{{ L('Сьогодні', 'Today') }}</button>
+        <button type="button" class="btn btn-icon" [attr.aria-label]="view() === 'day' ? L('Наступний день', 'Next day') : L('Наступний тиждень', 'Next week')" (click)="shift(1)"><svg [lucideIcon]="I.chevronRight" aria-hidden="true"></svg></button>
       </div>
-      <tk-date-picker class="w-52" ariaLabel="Дата табло" [value]="dayKey()" (changed)="$event && setDay($event)" />
-      <tk-radio-group variant="segmented" ariaLabel="Вигляд" [options]="views" [value]="view()" (changed)="view.set($event)" />
+      <tk-date-picker class="w-52" [ariaLabel]="L('Дата табло', 'Board date')" [value]="dayKey()" (changed)="$event && setDay($event)" />
+      <tk-radio-group variant="segmented" [ariaLabel]="L('Вигляд', 'View')" [options]="views" [value]="view()" (changed)="view.set($event)" />
       @if (branchOptions().length > 1) {
-        <tk-radio-group class="ml-auto" variant="segmented" ariaLabel="Філія" [options]="branchOptions()" [value]="ctx.branchId()" (changed)="ctx.setBranch($event)" />
+        <tk-radio-group class="ml-auto" variant="segmented" [ariaLabel]="L('Філія', 'Branch')" [options]="branchOptions()" [value]="ctx.branchId()" (changed)="ctx.setBranch($event)" />
       }
     </div>
 
@@ -83,14 +84,14 @@ interface UndoEntry {
         }
       </div>
     } @else if (!posts().length) {
-      <div class="card"><tk-empty art="calendar" title="У філії немає постів" text="Додайте пости в довіднику, щоб планувати записи." /></div>
+      <div class="card"><tk-empty art="calendar" [title]="L('У філії немає постів', 'This branch has no bays')" [text]="L('Додайте пости в довіднику, щоб планувати записи.', 'Add bays in Directories to plan bookings.')" /></div>
     } @else if (view() === 'week') {
       <!-- тиждень: завантаження постів по днях -->
       <div class="card overflow-x-auto">
         <table class="tbl">
           <thead>
             <tr>
-              <th class="w-44">Пост</th>
+              <th class="w-44">{{ L('Пост', 'Bay') }}</th>
               @for (d of weekDays(); track d.key) {
                 <th class="text-center" [class.text-accent-ink!]="d.today">{{ d.label }}</th>
               }
@@ -107,14 +108,14 @@ interface UndoEntry {
                       type="button"
                       class="block w-full rounded-md px-2 py-1.5 text-left transition-colors duration-100 hover:bg-subtle disabled:opacity-40"
                       [disabled]="!d.open"
-                      [attr.aria-label]="p.name + ', ' + d.label + ': ' + (d.open ? l.count + ' записів, завантаження ' + l.pct + '%' : 'вихідний')"
+                      [attr.aria-label]="p.name + ', ' + d.label + ': ' + (d.open ? L(l.count + ' записів, завантаження ' + l.pct + '%', l.count + ' bookings, ' + l.pct + '% utilised') : L('вихідний', 'closed'))"
                       (click)="openDay(d.date)"
                     >
                       @if (d.open) {
                         <span class="flex items-baseline justify-between text-xs"><span class="num">{{ l.count }}</span><span class="text-ink-3 num">{{ l.pct }}%</span></span>
                         <span class="mt-1 block h-1.5 overflow-hidden rounded-full bg-muted"><span class="block h-full rounded-full" [style.width.%]="l.pct" [style.background]="l.pct > 85 ? 'var(--danger)' : 'var(--accent)'"></span></span>
                       } @else {
-                        <span class="text-xs text-ink-3">вихідний</span>
+                        <span class="text-xs text-ink-3">{{ L('вихідний', 'closed') }}</span>
                       }
                     </button>
                   </td>
@@ -127,12 +128,16 @@ interface UndoEntry {
     } @else {
       @if (dayOff()) {
         <div class="mb-3 flex items-center gap-2 rounded-lg bg-accent-soft px-3 py-2 text-[13px] text-accent-ink" role="status">
-          <svg [lucideIcon]="I.info" aria-hidden="true"></svg>{{ ctx.branch()?.name }} у цей день не працює. Записи можна переглядати, але не створювати.
+          <svg [lucideIcon]="I.info" aria-hidden="true"></svg>{{ ctx.branch()?.name }} {{ L('у цей день не працює. Записи можна переглядати, але не створювати.', 'is closed on this day. You can view bookings but not create them.') }}
         </div>
       }
       <p id="board-help" class="sr-only">
-        Записи на табло — кнопки. Стрілки вліво й вправо переносять запис на 15 хвилин, вгору й вниз — на інший пост,
-        Shift зі стрілками змінює тривалість, Enter відкриває наряд. Ctrl+Z скасовує останнє перенесення.
+        {{
+          L(
+            'Записи на табло — кнопки. Стрілки вліво й вправо переносять запис на 15 хвилин, вгору й вниз — на інший пост, Shift зі стрілками змінює тривалість, Enter відкриває наряд. Ctrl+Z скасовує останнє перенесення.',
+            'Bookings on the board are buttons. Left and right arrows move a booking by 15 minutes, up and down move it to another bay, Shift with the arrows changes its length, Enter opens the work order. Ctrl+Z undoes the last move.'
+          )
+        }}
       </p>
       <div class="card relative overflow-hidden">
         <div #scroller class="overflow-x-auto" (scroll)="null">
@@ -156,7 +161,7 @@ interface UndoEntry {
                     <span class="flex items-center gap-1.5 text-[11px] text-ink-3">
                       <span class="hidden sm:inline">{{ postKind(p) }}</span>
                       <span class="num">{{ postLoad(p.id) }}%</span>
-                      <button type="button" class="ml-auto grid size-6 place-items-center rounded-md hover:bg-subtle hover:text-ink" [attr.aria-label]="'Записати на ' + p.name" [disabled]="dayOff()" (click)="quickBook(p, null)">
+                      <button type="button" class="ml-auto grid size-6 place-items-center rounded-md hover:bg-subtle hover:text-ink" [attr.aria-label]="L('Записати на ', 'Book on ') + p.name" [disabled]="dayOff()" (click)="quickBook(p, null)">
                         <svg [lucideIcon]="I.plus" [size]="14" aria-hidden="true"></svg>
                       </button>
                     </span>
@@ -235,13 +240,14 @@ interface UndoEntry {
         @for (s of legend; track s) {
           <span class="inline-flex items-center gap-1.5"><span class="size-2.5 rounded-sm" [style.background]="fg(s)"></span>{{ label(s) }}</span>
         }
-        <span class="ml-auto hidden md:inline">Перетягніть запис, щоб перенести; край праворуч — змінити тривалість. Клік по порожньому місцю — новий запис.</span>
+        <span class="ml-auto hidden md:inline">{{ L('Перетягніть запис, щоб перенести; край праворуч — змінити тривалість. Клік по порожньому місцю — новий запис.', 'Drag a booking to move it; drag its right edge to change its length. Click an empty slot for a new booking.') }}</span>
       </div>
     }
     <p class="sr-only" aria-live="polite">{{ announce() }}</p>
   `,
 })
 export class Board {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly SLOT = SLOT;
   protected readonly ROW = ROW;
@@ -257,8 +263,8 @@ export class Board {
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
 
   protected readonly views: Option<'day' | 'week'>[] = [
-    { value: 'day', label: 'День' },
-    { value: 'week', label: 'Тиждень' },
+    { value: 'day', label: L('День', 'Day') },
+    { value: 'week', label: L('Тиждень', 'Week') },
   ];
   protected readonly legend = ['zapys', 'pryiom', 'diagnostyka', 'pogodzhennia', 'v_roboti', 'kontrol', 'gotovo', 'vydano'] as const;
   protected readonly view = signal<'day' | 'week'>('day');
@@ -270,7 +276,7 @@ export class Board {
 
   protected readonly dayKey = computed(() => ymd(this.day()));
   protected readonly isToday = computed(() => sameDay(this.day(), new Date(this.ctx.now())));
-  protected readonly branchOptions = computed<Option<string>[]>(() => this.ctx.branches().map((b) => ({ value: b.id, label: b.name.replace('Торк ', '') })));
+  protected readonly branchOptions = computed<Option<string>[]>(() => this.ctx.branches().map((b) => ({ value: b.id, label: b.name.replace(`${BRAND} `, '') })));
   protected readonly posts = computed(() => this.db.posts.items().filter((p) => p.branchId === this.ctx.branchId() && p.active));
   private readonly open = computed(() => toMin(this.ctx.branch()?.opensAt ?? '08:00'));
   private readonly close = computed(() => toMin(this.ctx.branch()?.closesAt ?? '20:00'));
@@ -291,9 +297,9 @@ export class Board {
   });
 
   protected readonly subtitle = computed(() => {
-    if (!this.db.ready()) return 'Завантаження…';
+    if (!this.db.ready()) return L('Завантаження…', 'Loading…');
     const n = this.dayOrders().length;
-    return `${fmtDayLong(this.day())}: ${n} ${n === 1 ? 'запис' : n >= 2 && n <= 4 ? 'записи' : 'записів'}`;
+    return `${fmtDayLong(this.day())}: ${n} ${plural(n, ['запис', 'записи', 'записів'], ['booking', 'bookings'])}`;
   });
 
   private readonly dayOrders = computed(() => {
@@ -363,7 +369,7 @@ export class Board {
 
   constructor() {
     if (typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches) this.LABEL_W = 112;
-    const off = this.hk.register({ combo: 'mod+z', description: 'Скасувати перенесення на табло', handler: () => void this.undo(), allowInInput: false });
+    const off = this.hk.register({ combo: 'mod+z', description: L('Скасувати перенесення на табло', 'Undo a move on the bay board'), handler: () => void this.undo(), allowInInput: false });
     inject(DestroyRef).onDestroy(() => {
       off();
       document.body.classList.remove('is-dragging');
@@ -390,7 +396,10 @@ export class Board {
     return STATUS_LABEL[s];
   }
   protected postKind(p: Post): string {
-    return { lift: 'підйомник', diag: 'діагностика', tire: 'шиномонтаж', body: 'кузов', express: 'експрес' }[p.kind];
+    return L(
+      { lift: 'підйомник', diag: 'діагностика', tire: 'шиномонтаж', body: 'кузов', express: 'експрес' },
+      { lift: 'lift', diag: 'diagnostics', tire: 'tyres', body: 'body', express: 'express' },
+    )[p.kind];
   }
   protected postLoad(postId: string): number {
     return this.load(postId, this.day()).pct;
@@ -445,9 +454,9 @@ export class Board {
     let start: string | undefined;
     if (p && min !== null) start = this.iso(Math.min(min, this.close() - 60));
     else if (p) start = this.schedule.nextFree(p.id, 60, this.isToday() ? new Date() : this.day()) ?? undefined;
-    const ref = this.dialogs.open(OrderCreateDialog, { postId: p?.id, start }, { size: 'lg', label: 'Новий запис' });
+    const ref = this.dialogs.open(OrderCreateDialog, { postId: p?.id, start }, { size: 'lg', label: L('Новий запис', 'New booking') });
     const id = await firstValueFrom(ref.closed);
-    if (typeof id === 'string') this.toast.info('Запис додано на табло', { label: 'Відкрити наряд', run: () => void this.router.navigate(['/naryady', id]) });
+    if (typeof id === 'string') this.toast.info(L('Запис додано на табло', 'Booking added to the board'), { label: L('Відкрити наряд', 'Open work order'), run: () => void this.router.navigate(['/naryady', id]) });
   }
 
   // ——— перетягування (вказівник) і зміна тривалості
@@ -510,16 +519,16 @@ export class Board {
   private async commit(o: Order, postId: string, startMin: number, dur: number, conflicts: Conflict[]): Promise<boolean> {
     const hard = conflicts.find((c) => c.kind === 'overlap' || c.kind === 'dayoff');
     if (hard) {
-      this.toast.error(`Не перенесено: ${hard.text.charAt(0).toLowerCase()}${hard.text.slice(1)}`);
-      this.announce.set(`Не перенесено. ${hard.text}`);
+      this.toast.error(`${L('Не перенесено', 'Not moved')}: ${hard.text.charAt(0).toLowerCase()}${hard.text.slice(1)}`);
+      this.announce.set(`${L('Не перенесено', 'Not moved')}. ${hard.text}`);
       return false;
     }
     if (conflicts.length) {
       const ok = await this.dialogs.confirm({
-        title: `Перенести ${o.number} попри конфлікт?`,
+        title: L(`Перенести ${o.number} попри конфлікт?`, `Move ${o.number} despite the conflict?`),
         text: conflicts.map((c) => c.text).join('. ') + '.',
-        confirm: 'Все одно перенести',
-        cancel: 'Не переносити',
+        confirm: L('Все одно перенести', 'Move anyway'),
+        cancel: L('Не переносити', 'Don’t move'),
       });
       if (!ok) return false;
     }
@@ -533,8 +542,8 @@ export class Board {
       );
       this.undoStack.update((s) => [...s.slice(-19), prev]);
       const msg = `${o.number}: ${post?.name}, ${minToHHMM(startMin)}, ${fmtDuration(dur)}`;
-      this.announce.set(`Перенесено. ${msg}`);
-      this.toast.success(msg, { label: 'Скасувати', run: () => this.undo() });
+      this.announce.set(`${L('Перенесено', 'Moved')}. ${msg}`);
+      this.toast.success(msg, { label: L('Скасувати', 'Undo'), run: () => this.undo() });
       return true;
     } catch (e) {
       this.toast.error(e);
@@ -547,9 +556,9 @@ export class Board {
     if (!last) return;
     this.undoStack.update((s) => s.slice(0, -1));
     try {
-      await this.db.orders.update(last.id, { postId: last.postId, start: last.start, durationMin: last.durationMin }, { log: `${last.number}: перенесення скасовано` });
-      this.announce.set(`${last.number} повернуто на місце`);
-      this.toast.info(`${last.number} повернуто на попереднє місце`);
+      await this.db.orders.update(last.id, { postId: last.postId, start: last.start, durationMin: last.durationMin }, { log: L(`${last.number}: перенесення скасовано`, `${last.number}: move undone`) });
+      this.announce.set(L(`${last.number} повернуто на місце`, `${last.number} moved back`));
+      this.toast.info(L(`${last.number} повернуто на попереднє місце`, `${last.number} moved back to where it was`));
     } catch (e) {
       this.toast.error(e);
     }

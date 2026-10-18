@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, effect, input, model, signal, viewChild } from '@angular/core';
 import { Icon } from './icon';
 import { I } from '../icons';
+import { L } from '../../core/i18n';
 
 /**
  * Підпис на canvas (миша, палець, стилус). Для тих, хто не може малювати, —
@@ -18,22 +19,22 @@ import { I } from '../icons';
         class="block h-40 w-full touch-none"
         [class.cursor-crosshair]="!readonly()"
         role="img"
-        [attr.aria-label]="value() ? 'Підпис клієнта поставлено' : 'Поле для підпису'"
+        [attr.aria-label]="value() ? L('Підпис клієнта поставлено', 'Customer has signed') : L('Поле для підпису', 'Signature field')"
         (pointerdown)="start($event)"
       ></canvas>
       @if (!value() && !drawing()) {
-        <span class="pointer-events-none absolute inset-0 grid place-items-center text-[13px] text-[#6f695e]">Підпис клієнта</span>
+        <span class="pointer-events-none absolute inset-0 grid place-items-center text-[13px] text-[#6f695e]">{{ L('Підпис клієнта', 'Customer signature') }}</span>
       }
       <span class="pointer-events-none absolute right-6 bottom-8 left-6 border-b border-dashed border-line-strong" aria-hidden="true"></span>
     </div>
     @if (!readonly()) {
       <div class="mt-2 flex flex-wrap items-center gap-2">
-        <button type="button" class="btn btn-sm" [disabled]="!value()" (click)="clear()"><svg [lucideIcon]="I.undo" aria-hidden="true"></svg>Очистити</button>
+        <button type="button" class="btn btn-sm" [disabled]="!value()" (click)="clear()"><svg [lucideIcon]="I.undo" aria-hidden="true"></svg>{{ L('Очистити', 'Clear') }}</button>
         @if (!typed()) {
-          <button type="button" class="btn btn-ghost btn-sm" (click)="typed.set(true)">Ввести ім’я замість підпису</button>
+          <button type="button" class="btn btn-ghost btn-sm" (click)="typed.set(true)">{{ L('Ввести ім’я замість підпису', 'Type a name instead of signing') }}</button>
         } @else {
           <div class="control control-sm max-w-64 flex-1">
-            <input type="text" aria-label="Ім’я для підпису" placeholder="Ім’я та прізвище" [value]="typedName()" (input)="renderTyped($any($event.target).value)" />
+            <input type="text" [attr.aria-label]="L('Ім’я для підпису', 'Name for the signature')" [placeholder]="L('Ім’я та прізвище', 'Full name')" [value]="typedName()" (input)="renderTyped($any($event.target).value)" />
           </div>
         }
       </div>
@@ -41,6 +42,7 @@ import { I } from '../icons';
   `,
 })
 export class SignaturePad {
+  protected readonly L = L;
   protected readonly I = I;
   readonly value = model<string | null>(null);
   readonly readonly = input(false);

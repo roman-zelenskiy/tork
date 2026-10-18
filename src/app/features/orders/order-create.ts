@@ -21,6 +21,7 @@ import { Option } from '../../shared/ui/option';
 import { fmtDuration, fmtHours, fmtMoney, fmtPhone, minToHHMM, ymd } from '../../shared/format';
 import { ClientForm } from '../clients/client-form';
 import { CarForm } from '../clients/car-form';
+import { L, locale } from '../../core/i18n';
 
 export interface OrderPrefill {
   clientId?: string;
@@ -37,74 +38,74 @@ export interface OrderPrefill {
   host: { class: 'flex min-h-0 flex-col' },
   template: `
     <div class="dlg-head items-center!">
-      <h2 class="flex-1" id="oc-h">Новий наряд</h2>
-      <button type="button" class="btn btn-ghost btn-icon" aria-label="Закрити" (click)="requestClose()"><svg [lucideIcon]="I.x" aria-hidden="true"></svg></button>
+      <h2 class="flex-1" id="oc-h">{{ L('Новий наряд', 'New work order') }}</h2>
+      <button type="button" class="btn btn-ghost btn-icon" [attr.aria-label]="L('Закрити', 'Close')" (click)="requestClose()"><svg [lucideIcon]="I.x" aria-hidden="true"></svg></button>
     </div>
     <form class="flex min-h-0 flex-1 flex-col" novalidate (submit)="$event.preventDefault(); save()" aria-labelledby="oc-h">
       <div class="dlg-body grid gap-x-5 gap-y-4 md:grid-cols-2">
         <div class="flex flex-col gap-4">
-          <tk-field forId="oc-client" label="Клієнт" [required]="true" [error]="err('client')">
+          <tk-field forId="oc-client" [label]="L('Клієнт', 'Customer')" [required]="true" [error]="err('client')">
             <tk-combobox
               inputId="oc-client"
               [options]="clientOptions()"
               [(value)]="clientId"
               [icon]="I.user"
-              placeholder="Ім’я, телефон або номер авто"
-              createLabel="Новий клієнт"
+              [placeholder]="L('Ім’я, телефон або номер авто', 'Name, phone or number plate')"
+              [createLabel]="L('Новий клієнт', 'New customer')"
               [invalid]="!!err('client')"
               describedBy="oc-client-err"
               (create)="newClient($event)"
             />
           </tk-field>
 
-          <tk-field forId="oc-car" label="Авто" [required]="true" [error]="err('car')">
+          <tk-field forId="oc-car" [label]="L('Авто', 'Car')" [required]="true" [error]="err('car')">
             <div class="flex gap-2">
-              <tk-select class="flex-1" inputId="oc-car" [options]="carOptions()" [(value)]="carId" [disabled]="!clientId()" [placeholder]="clientId() ? (carOptions().length ? 'Оберіть авто' : 'У клієнта немає авто') : 'Спершу оберіть клієнта'" [invalid]="!!err('car')" describedBy="oc-car-err" />
-              <button type="button" class="btn btn-icon h-9!" aria-label="Додати авто клієнту" [disabled]="!clientId()" (click)="newCar()"><svg [lucideIcon]="I.plus" aria-hidden="true"></svg></button>
+              <tk-select class="flex-1" inputId="oc-car" [options]="carOptions()" [(value)]="carId" [disabled]="!clientId()" [placeholder]="clientId() ? (carOptions().length ? L('Оберіть авто', 'Choose a car') : L('У клієнта немає авто', 'The customer has no cars')) : L('Спершу оберіть клієнта', 'Choose a customer first')" [invalid]="!!err('car')" describedBy="oc-car-err" />
+              <button type="button" class="btn btn-icon h-9!" [attr.aria-label]="L('Додати авто клієнту', 'Add a car for the customer')" [disabled]="!clientId()" (click)="newCar()"><svg [lucideIcon]="I.plus" aria-hidden="true"></svg></button>
             </div>
           </tk-field>
 
-          <tk-field forId="oc-complaint" label="Скарга або побажання">
-            <tk-text-field inputId="oc-complaint" [multiline]="true" [rows]="2" [maxLength]="300" [(value)]="complaint" placeholder="Стукіт спереду на нерівностях" />
+          <tk-field forId="oc-complaint" [label]="L('Скарга або побажання', 'Complaint or request')">
+            <tk-text-field inputId="oc-complaint" [multiline]="true" [rows]="2" [maxLength]="300" [(value)]="complaint" [placeholder]="L('Стукіт спереду на нерівностях', 'Knocking from the front over bumps')" />
           </tk-field>
 
-          <tk-field forId="oc-work" label="Роботи" [hint]="works().length ? null : 'Можна додати пізніше в наряді'">
-            <tk-combobox inputId="oc-work" [options]="workOptions()" [resetOnPick]="true" [icon]="I.wrench" placeholder="Код або назва: ТО-01, колодки…" (selected)="addWork($event.value)" />
+          <tk-field forId="oc-work" [label]="L('Роботи', 'Jobs')" [hint]="works().length ? null : L('Можна додати пізніше в наряді', 'You can add them later in the work order')">
+            <tk-combobox inputId="oc-work" [options]="workOptions()" [resetOnPick]="true" [icon]="I.wrench" [placeholder]="L('Код або назва: ТО-01, колодки…', 'Code or name: SV-01, pads…')" (selected)="addWork($event.value)" />
           </tk-field>
           @if (works().length) {
-            <ul class="-mt-2 m-0 flex list-none flex-col gap-1 p-0" aria-label="Обрані роботи">
+            <ul class="-mt-2 m-0 flex list-none flex-col gap-1 p-0" [attr.aria-label]="L('Обрані роботи', 'Selected jobs')">
               @for (w of works(); track w.id) {
                 <li class="flex items-center gap-2 rounded-md bg-subtle py-1 pr-1 pl-2.5 text-[13px]">
                   <span class="text-xs text-ink-3 mono">{{ w.code }}</span>
                   <span class="truncate-1 flex-1">{{ w.name }}</span>
                   <span class="text-xs text-ink-2 num">{{ hours(w.hours) }}</span>
-                  <button type="button" class="btn btn-ghost btn-icon btn-sm" [attr.aria-label]="'Прибрати ' + w.name" (click)="removeWork(w.id)"><svg [lucideIcon]="I.x" [size]="14" aria-hidden="true"></svg></button>
+                  <button type="button" class="btn btn-ghost btn-icon btn-sm" [attr.aria-label]="L('Прибрати ', 'Remove ') + w.name" (click)="removeWork(w.id)"><svg [lucideIcon]="I.x" [size]="14" aria-hidden="true"></svg></button>
                 </li>
               }
-              <li class="px-2.5 pt-1 text-xs text-ink-2">Разом {{ hours(totalHours()) }}, орієнтовно {{ money(estimate()) }}</li>
+              <li class="px-2.5 pt-1 text-xs text-ink-2">{{ L('Разом', 'Total') }} {{ hours(totalHours()) }}, {{ L('орієнтовно', 'about') }} {{ money(estimate()) }}</li>
             </ul>
           }
         </div>
 
         <div class="flex flex-col gap-4">
           <div class="grid grid-cols-2 gap-3">
-            <tk-field forId="oc-branch" label="Філія">
+            <tk-field forId="oc-branch" [label]="L('Філія', 'Branch')">
               <tk-select inputId="oc-branch" [options]="branchOptions()" [(value)]="branchId" />
             </tk-field>
-            <tk-field forId="oc-post" label="Пост" [error]="err('post')">
-              <tk-select inputId="oc-post" [options]="postOptions()" [(value)]="postId" placeholder="Без поста" [clearable]="true" />
+            <tk-field forId="oc-post" [label]="L('Пост', 'Bay')" [error]="err('post')">
+              <tk-select inputId="oc-post" [options]="postOptions()" [(value)]="postId" [placeholder]="L('Без поста', 'No bay')" [clearable]="true" />
             </tk-field>
-            <tk-field forId="oc-date" label="Дата" [error]="err('date')">
+            <tk-field forId="oc-date" [label]="L('Дата', 'Date')" [error]="err('date')">
               <tk-date-picker inputId="oc-date" [(value)]="date" [min]="today" [invalid]="!!err('date')" describedBy="oc-date-err" />
             </tk-field>
-            <tk-field forId="oc-time" label="Час" [error]="err('time')">
+            <tk-field forId="oc-time" [label]="L('Час', 'Time')" [error]="err('time')">
               <tk-time-picker inputId="oc-time" [(value)]="time" [from]="hours0()" [to]="hours1()" [busy]="busySlots()" [invalid]="!!err('time')" describedBy="oc-time-err" />
             </tk-field>
-            <tk-field forId="oc-dur" label="Тривалість" [hint]="duration() >= 60 ? fmtDur(duration()) : null">
-              <tk-stepper inputId="oc-dur" [(value)]="duration" [min]="15" [max]="600" [step]="15" suffix="хв" />
+            <tk-field forId="oc-dur" [label]="L('Тривалість', 'Duration')" [hint]="duration() >= 60 ? fmtDur(duration()) : null">
+              <tk-stepper inputId="oc-dur" [(value)]="duration" [min]="15" [max]="600" [step]="15" [suffix]="L('хв', 'min')" />
             </tk-field>
-            <tk-field forId="oc-mech" label="Механік">
-              <tk-select inputId="oc-mech" [options]="mechOptions()" [(value)]="mechanicId" placeholder="Не призначено" [clearable]="true" />
+            <tk-field forId="oc-mech" [label]="L('Механік', 'Mechanic')">
+              <tk-select inputId="oc-mech" [options]="mechOptions()" [(value)]="mechanicId" [placeholder]="L('Не призначено', 'Not assigned')" [clearable]="true" />
             </tk-field>
           </div>
 
@@ -115,30 +116,31 @@ export interface OrderPrefill {
                   <div class="flex gap-2"><svg [lucideIcon]="I.alert" class="mt-0.5 flex-none" aria-hidden="true"></svg>{{ c.text }}</div>
                 }
                 @if (suggested(); as s) {
-                  <button type="button" class="btn btn-sm mt-2" (click)="applySlot(s)">Найближчий вільний: {{ slotLabel(s) }}</button>
+                  <button type="button" class="btn btn-sm mt-2" (click)="applySlot(s)">{{ L('Найближчий вільний:', 'Next free slot:') }} {{ slotLabel(s) }}</button>
                 }
               </div>
             } @else {
               <div class="animate-fade flex gap-2 rounded-lg bg-success-soft p-3 text-[13px] text-success" role="status">
-                <svg [lucideIcon]="I.circleCheck" class="mt-0.5 flex-none" aria-hidden="true"></svg>Пост вільний, механік не зайнятий
+                <svg [lucideIcon]="I.circleCheck" class="mt-0.5 flex-none" aria-hidden="true"></svg>{{ L('Пост вільний, механік не зайнятий', 'The bay is free and the mechanic is available') }}
               </div>
             }
           }
         </div>
       </div>
       <div class="dlg-foot">
-        <button type="button" class="btn" (click)="requestClose()">Скасувати</button>
+        <button type="button" class="btn" (click)="requestClose()">{{ L('Скасувати', 'Cancel') }}</button>
         <button type="submit" class="btn btn-primary" [disabled]="saving()" [attr.aria-busy]="saving()">
           @if (saving()) {
             <svg [lucideIcon]="I.loader" class="animate-spin" aria-hidden="true"></svg>
           }
-          Створити наряд
+          {{ L('Створити наряд', 'Create work order') }}
         </button>
       </div>
     </form>
   `,
 })
 export class OrderCreateDialog extends FormDialog<string> {
+  protected readonly L = L;
   protected readonly I = I;
   private readonly db = inject(DbService);
   private readonly orders = inject(OrdersService);
@@ -270,7 +272,7 @@ export class OrderCreateDialog extends FormDialog<string> {
 
   protected slotLabel(iso: string): string {
     const d = new Date(iso);
-    const day = ymd(d) === this.today ? 'сьогодні' : d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' });
+    const day = ymd(d) === this.today ? L('сьогодні', 'today') : d.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
     return `${day}, ${minToHHMM(d.getHours() * 60 + d.getMinutes())}`;
   }
   protected applySlot(iso: string): void {
@@ -280,7 +282,7 @@ export class OrderCreateDialog extends FormDialog<string> {
   }
 
   protected async newClient(name: string): Promise<void> {
-    const ref = this.dialogs.open(ClientForm, { name }, { drawer: true, label: 'Новий клієнт' });
+    const ref = this.dialogs.open(ClientForm, { name }, { drawer: true, label: L('Новий клієнт', 'New customer') });
     const id = await firstValueFrom(ref.closed);
     if (typeof id === 'string') {
       this.clientId.set(id);
@@ -289,7 +291,7 @@ export class OrderCreateDialog extends FormDialog<string> {
   }
 
   protected async newCar(): Promise<void> {
-    const ref = this.dialogs.open(CarForm, { clientId: this.clientId()! }, { drawer: true, label: 'Нове авто' });
+    const ref = this.dialogs.open(CarForm, { clientId: this.clientId()! }, { drawer: true, label: L('Нове авто', 'New car') });
     const id = await firstValueFrom(ref.closed);
     if (typeof id === 'string') this.carId.set(id);
   }
@@ -302,10 +304,10 @@ export class OrderCreateDialog extends FormDialog<string> {
   protected errors() {
     const hard = this.conflicts().find((c) => c.kind === 'overlap' || c.kind === 'dayoff');
     return {
-      client: this.clientId() ? null : 'Оберіть або створіть клієнта',
-      car: this.carId() ? null : 'Оберіть авто',
-      date: this.postId() && !this.date() ? 'Оберіть дату' : null,
-      time: this.postId() && this.date() && !this.time() ? 'Оберіть час' : hard ? hard.text : null,
+      client: this.clientId() ? null : L('Оберіть або створіть клієнта', 'Choose or create a customer'),
+      car: this.carId() ? null : L('Оберіть авто', 'Choose a car'),
+      date: this.postId() && !this.date() ? L('Оберіть дату', 'Choose a date') : null,
+      time: this.postId() && this.date() && !this.time() ? L('Оберіть час', 'Choose a time') : hard ? hard.text : null,
     };
   }
 
@@ -322,7 +324,7 @@ export class OrderCreateDialog extends FormDialog<string> {
         complaint: this.complaint().trim(),
         workIds: this.workIds(),
       });
-      this.toast.success(`Наряд ${o.number} створено`);
+      this.toast.success(L(`Наряд ${o.number} створено`, `Work order ${o.number} created`));
       return o.id;
     });
   }

@@ -1,9 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { DbService } from '../data/db.service';
-import { Order, OrderPart, OrderStatus, OrderWork, Part, PayMethod, Work } from '../data/models';
+import { ORDER_PREFIX, Order, OrderPart, OrderStatus, OrderWork, Part, PayMethod, TAG_DISCOUNT, Work } from '../data/models';
+import { fmtMoney } from '../../shared/format';
 import { newId, nowIso } from '../data/util';
 import { STATUS_FLOW, STATUS_LABEL, canMove, orderTotals } from './order-math';
 import { StockService } from './stock.service';
+import { L } from '../i18n';
 
 export interface NewOrder {
   branchId: string;
@@ -27,7 +29,7 @@ export class OrdersService {
   private readonly stock = inject(StockService);
 
   private me(): string {
-    return 'Адміністратор';
+    return L('Адміністратор', 'Administrator');
   }
 
   /** Ставка: пост (якщо задана) або категорія роботи з налаштувань */
@@ -40,7 +42,7 @@ export class OrdersService {
 
   nextNumber(): string {
     const max = this.db.orders.items().reduce((m, o) => Math.max(m, Number(o.number.replace(/\D/g, '')) || 0), 1000);
-    return `Н-${max + 1}`;
+    return `${ORDER_PREFIX}${max + 1}`;
   }
 
   workLine(w: Work, postId: string | null, mechanicId: string | null, extra: Partial<OrderWork> = {}): OrderWork {
@@ -83,7 +85,7 @@ export class OrdersService {
         mileage: null,
         works: works.map((w) => this.workLine(w, n.postId, n.mechanicId)),
         parts: [],
-        discountPct: client?.tags.includes('знижка 5%') ? 5 : client?.kind === 'company' ? 3 : 0,
+        discountPct: client?.tags.includes(TAG_DISCOUNT) ? 5 : client?.kind === 'company' ? 3 : 0,
         payments: [],
         history: [{ from: null, to: 'zapys', at: now, by: this.me() }],
         intake: null,
@@ -91,7 +93,7 @@ export class OrdersService {
         closedAt: null,
         notes: '',
       },
-      { log: `Новий наряд ${number}${car ? ` — ${car.make} ${car.model}` : ''}` },
+      { log: L(`Новий наряд ${number}`, `New work order ${number}`) + (car ? ` — ${car.make} ${car.model}` : '') },
     );
   }
 
@@ -99,18 +101,18 @@ export class OrdersService {
   warnings(o: Order, to: OrderStatus): string[] {
     const w: string[] = [];
     const t = orderTotals(o);
-    if (to === 'vydano' && t.debt > 0) w.push(`Наряд не сплачено повністю: борг ${t.debt.toLocaleString('uk-UA')} ₴ залишиться за клієнтом.`);
-    if (to === 'vydano' && o.works.some((x) => x.decision !== 'declined' && x.state !== 'done')) w.push('Не всі роботи позначено виконаними.');
+    if (to === 'vydano' && t.debt > 0) w.push(L(`Наряд не сплачено повністю: борг ${fmtMoney(t.debt)} залишиться за клієнтом.`, `The work order isn’t fully paid: ${fmtMoney(t.debt)} will stay on the customer’s balance.`));
+    if (to === 'vydano' && o.works.some((x) => x.decision !== 'declined' && x.state !== 'done')) w.push(L('Не всі роботи позначено виконаними.', 'Not all jobs are marked as done.'));
     if ((to === 'v_roboti' || to === 'kontrol') && o.works.some((x) => x.needsApproval && x.decision === null))
-      w.push('Клієнт ще не відповів на погодження — непогоджені роботи не виконуйте.');
-    if (to === 'v_roboti' && !o.intake) w.push('Акт прийому не заповнено.');
-    if (to === 'skasovano' && o.parts.some((p) => p.issued)) w.push('Видані запчастини повернуться на склад.');
+      w.push(L('Клієнт ще не відповів на погодження — непогоджені роботи не виконуйте.', 'The customer hasn’t answered the approval request yet — don’t do unapproved work.'));
+    if (to === 'v_roboti' && !o.intake) w.push(L('Акт прийому не заповнено.', 'The intake report isn’t filled in.'));
+    if (to === 'skasovano' && o.parts.some((p) => p.issued)) w.push(L('Видані запчастини повернуться на склад.', 'Issued parts will go back to stock.'));
     return w;
   }
 
   async setStatus(o: Order, to: OrderStatus): Promise<Order> {
     const check = canMove(o.status, to);
-    if (!check.ok) throw new Error(check.reason ?? 'Такий перехід неможливий');
+    if (!check.ok) throw new Error(check.reason ?? L('Такий перехід неможливий', 'This status change isn’t possible'));
     const now = nowIso();
     let parts = o.parts;
     let works = o.works;
@@ -147,12 +149,12 @@ export class OrdersService {
   }
 
   async addWork(o: Order, w: Work): Promise<void> {
-    await this.patch(o, { works: [...o.works, this.workLine(w, o.postId, o.mechanicId)] }, `${o.number}: додано роботу «${w.name}»`);
+    await this.patch(o, { works: [...o.works, this.workLine(w, o.postId, o.mechanicId)] }, L(`${o.number}: додано роботу «${w.name}»`, `${o.number}: added job “${w.name}”`));
   }
 
   async addCustomWork(o: Order, name: string, hours: number): Promise<void> {
     const line: OrderWork = { ...this.workLine({ id: '', categoryId: '' } as Work, o.postId, o.mechanicId), workId: null, name, hours };
-    await this.patch(o, { works: [...o.works, line] }, `${o.number}: додано роботу «${name}»`);
+    await this.patch(o, { works: [...o.works, line] }, L(`${o.number}: додано роботу «${name}»`, `${o.number}: added job “${name}”`));
   }
 
   async addPart(o: Order, p: Part, qty: number): Promise<void> {
@@ -171,32 +173,32 @@ export class OrdersService {
     // з моменту прийому запчастини одразу резервуються; у роботі — видаються
     if (o.status !== 'zapys') [line] = await this.stock.reserveParts(o, [line]);
     if (STATUS_FLOW.indexOf(o.status) >= STATUS_FLOW.indexOf('v_roboti')) [line] = await this.stock.issueParts(o, [line]);
-    await this.patch(this.db.orders.get(o.id) ?? o, { parts: [...(this.db.orders.get(o.id) ?? o).parts, line] }, `${o.number}: додано ${p.brand} ${p.sku} × ${qty}`);
+    await this.patch(this.db.orders.get(o.id) ?? o, { parts: [...(this.db.orders.get(o.id) ?? o).parts, line] }, L(`${o.number}: додано ${p.brand} ${p.sku} × ${qty}`, `${o.number}: added ${p.brand} ${p.sku} × ${qty}`));
   }
 
   async removeLine(o: Order, kind: 'work' | 'part', id: string): Promise<void> {
     if (kind === 'work') {
       const w = o.works.find((x) => x.id === id);
-      await this.patch(o, { works: o.works.filter((x) => x.id !== id) }, `${o.number}: прибрано роботу «${w?.name}»`);
+      await this.patch(o, { works: o.works.filter((x) => x.id !== id) }, L(`${o.number}: прибрано роботу «${w?.name}»`, `${o.number}: removed job “${w?.name}”`));
     } else {
       const line = o.parts.find((x) => x.id === id);
       if (line) await this.stock.releaseParts(o, [line], true);
-      await this.patch(this.db.orders.get(o.id) ?? o, { parts: (this.db.orders.get(o.id) ?? o).parts.filter((x) => x.id !== id) }, `${o.number}: прибрано «${line?.name}»`);
+      await this.patch(this.db.orders.get(o.id) ?? o, { parts: (this.db.orders.get(o.id) ?? o).parts.filter((x) => x.id !== id) }, L(`${o.number}: прибрано «${line?.name}»`, `${o.number}: removed “${line?.name}”`));
     }
   }
 
   async addPayment(o: Order, method: PayMethod, amount: number): Promise<void> {
     const pay = { id: newId('pay'), method, amount: Math.round(amount), at: nowIso() };
-    await this.patch(o, { payments: [...o.payments, pay] }, `${o.number}: оплата ${pay.amount.toLocaleString('uk-UA')} ₴`);
+    await this.patch(o, { payments: [...o.payments, pay] }, L(`${o.number}: оплата ${fmtMoney(pay.amount)}`, `${o.number}: payment ${fmtMoney(pay.amount)}`));
   }
 
   async remove(o: Order): Promise<() => Promise<void>> {
     if (o.parts.some((p) => p.reserved || p.issued)) await this.stock.releaseParts(o, o.parts, true);
     const appr = this.db.approvals.items().filter((a) => a.orderId === o.id);
     const removedAppr = await this.db.approvals.removeMany(appr.map((a) => a.id));
-    const removed = await this.db.orders.remove(o.id, { log: `Видалено наряд ${o.number}` });
+    const removed = await this.db.orders.remove(o.id, { log: L(`Видалено наряд ${o.number}`, `Work order ${o.number} deleted`) });
     return async () => {
-      if (removed) await this.db.orders.restore(removed, { log: `Відновлено наряд ${o.number}` });
+      if (removed) await this.db.orders.restore(removed, { log: L(`Відновлено наряд ${o.number}`, `Work order ${o.number} restored`) });
       await this.db.approvals.restoreMany(removedAppr);
     };
   }

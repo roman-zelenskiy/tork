@@ -3,6 +3,7 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Icon } from './icon';
 import { I } from '../icons';
 import { ToastService } from '../../core/ui/toast.service';
+import { L } from '../../core/i18n';
 
 export interface ConfirmData {
   title: string;
@@ -34,7 +35,7 @@ export interface ConfirmData {
       </div>
     </div>
     <div class="dlg-foot">
-      <button type="button" class="btn" (click)="ref.close(false)">{{ data.cancel ?? 'Скасувати' }}</button>
+      <button type="button" class="btn" (click)="ref.close(false)">{{ data.cancel ?? L('Скасувати', 'Cancel') }}</button>
       <button
         type="button"
         class="btn"
@@ -53,6 +54,7 @@ export interface ConfirmData {
   `,
 })
 export class ConfirmDialog {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly data = inject<ConfirmData>(DIALOG_DATA);
   protected readonly ref = inject<DialogRef<boolean>>(DialogRef);

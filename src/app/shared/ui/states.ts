@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { Icon } from './icon';
 import { I } from '../icons';
+import { L } from '../../core/i18n';
 
 export type EmptyArt = 'orders' | 'clients' | 'search' | 'stock' | 'inbox' | 'car' | 'calendar' | 'chart' | 'bell' | 'done';
 
@@ -106,14 +107,15 @@ export class EmptyState {
     <h2 class="m-0 text-[15px] font-semibold">{{ title() }}</h2>
     <p class="mx-auto mt-1 mb-0 max-w-[48ch] text-[13px] text-ink-2">{{ text() }}</p>
     <button type="button" class="btn mt-4" (click)="retry.emit()">
-      <svg [lucideIcon]="I.undo" aria-hidden="true"></svg>Спробувати ще раз
+      <svg [lucideIcon]="I.undo" aria-hidden="true"></svg>{{ L('Спробувати ще раз', 'Try again') }}
     </button>
   `,
 })
 export class ErrorState {
+  protected readonly L = L;
   protected readonly I = I;
-  readonly title = input('Не вдалося завантажити дані');
-  readonly text = input('Сховище браузера не відповіло. Перевірте, чи не вимкнено збереження даних для сайту.');
+  readonly title = input(L('Не вдалося завантажити дані', 'Couldn’t load the data'));
+  readonly text = input(L('Сховище браузера не відповіло. Перевірте, чи не вимкнено збереження даних для сайту.', 'Browser storage didn’t respond. Check that site data isn’t blocked.'));
   readonly retry = output<void>();
 }
 

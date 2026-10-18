@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Tork — CRM for a car service chain</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Tork is a working CRM for a chain of car service centres: a bay board, work orders, a vehicle intake report with a body diagram, customer approval of repairs, stock, mechanics’ pay and analytics.">
+  <meta name="theme-color" content="#f6f4f0" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1b1a17" media="(prefers-color-scheme: dark)">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Tork — CRM for a car service chain">
+  <meta property="og:description" content="Bay board, work orders, intake report, customer approvals, stock and analytics for a car service. A portfolio demo project.">
+  <meta property="og:image" content="og.png">
+  <meta property="og:locale" content="en_GB">
+  <meta property="og:locale:alternate" content="uk_UA">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+  <!-- тема до першої відмальовки: без «блимання» при перезавантаженні -->
+  <script>
+    (function () {
+      try {
+        var s = JSON.parse(localStorage.getItem('tork-en:settings') || '[]')[0] || {};
+        var t = s.theme === 'dark' || (s.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+        if (s.sidebarCollapsed) document.documentElement.setAttribute('data-sidebar', 'collapsed');
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <tk-root></tk-root>
+</body>
+</html>

@@ -11,6 +11,7 @@ import {
 } from './models';
 import { StorageError, StorageService } from './storage.service';
 import { delay, newId, nowIso } from './util';
+import { BRAND, L, isEn } from '../i18n';
 
 type Draft<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt'> & { id?: string };
 type Patch<T> = Partial<Omit<T, 'id' | 'createdAt'>>;
@@ -100,7 +101,7 @@ export class Repository<K extends EntityKey> {
   ): Promise<EntityMap[K]> {
     await delay();
     const cur = this.byId().get(id);
-    if (!cur) throw new Error('Запис не знайдено — можливо, його видалили в іншій вкладці');
+    if (!cur) throw new Error(L('Запис не знайдено — можливо, його видалили в іншій вкладці', 'Record not found — it may have been deleted in another tab'));
     const next = { ...cur, ...(typeof patch === 'function' ? patch(cur) : patch), id, updatedAt: nowIso() } as EntityMap[K];
     this.persist(this.items().map((x) => (x.id === id ? next : x)));
     this.db.log(this.name, id, opts.action ?? 'update', opts.log);
@@ -244,7 +245,7 @@ export class DbService {
       await delay(80, 160);
       this.ready.set(true);
     } catch (e) {
-      this.loadError.set(e instanceof Error ? e.message : 'Не вдалося прочитати дані');
+      this.loadError.set(e instanceof Error ? e.message : L('Не вдалося прочитати дані', 'Couldn’t read the data'));
     }
   }
 
@@ -254,13 +255,13 @@ export class DbService {
 
   async seedDemo(): Promise<void> {
     const { buildDemo } = await import('./seed');
-    this.importAll(buildDemo(new Date()), 'Демо-дані згенеровано');
+    this.importAll(buildDemo(new Date()), L('Демо-дані згенеровано', 'Demo data generated'));
   }
 
   /** Чиста база: лише налаштування, одна філія й базові довідники */
   async clean(): Promise<void> {
     const { buildEmpty } = await import('./seed');
-    this.importAll(buildEmpty(new Date()), 'Почато з чистої бази');
+    this.importAll(buildEmpty(new Date()), L('Почато з чистої бази', 'Started with a clean database'));
   }
 
   /** Записує всі сутності разом (імпорт, скидання) */
@@ -278,7 +279,7 @@ export class DbService {
   }
 
   exportAll(): { [K in EntityKey]: EntityMap[K][] } & { meta: unknown } {
-    const out = { meta: { version: SCHEMA_VERSION, exportedAt: nowIso(), app: 'Торк' } } as Record<string, unknown>;
+    const out = { meta: { version: SCHEMA_VERSION, exportedAt: nowIso(), app: BRAND } } as Record<string, unknown>;
     for (const name of Object.keys(ENTITY_KEYS) as EntityKey[]) out[name] = this.repo(name).items();
     return out as { [K in EntityKey]: EntityMap[K][] } & { meta: unknown };
   }
@@ -320,7 +321,7 @@ export class DbService {
 
   private listen(): void {
     if (typeof BroadcastChannel !== 'undefined') {
-      this.channel = new BroadcastChannel('tork');
+      this.channel = new BroadcastChannel(isEn ? 'tork-en' : 'tork');
       this.channel.onmessage = (e: MessageEvent<{ name: EntityKey }>) => this.reloadFromOutside(e.data.name);
     }
     // запасний шлях — подія storage (спрацьовує лише в інших вкладках)
@@ -338,12 +339,23 @@ export class DbService {
   }
 }
 
-const DEFAULT_SUMMARY: Record<ActivityEntry['action'], string> = {
-  create: 'Створено запис',
-  update: 'Змінено запис',
-  delete: 'Видалено запис',
-  status: 'Змінено статус',
-  stock: 'Рух складу',
-  message: 'Надіслано повідомлення',
-  import: 'Імпорт даних',
-};
+const DEFAULT_SUMMARY: Record<ActivityEntry['action'], string> = L(
+  {
+    create: 'Створено запис',
+    update: 'Змінено запис',
+    delete: 'Видалено запис',
+    status: 'Змінено статус',
+    stock: 'Рух складу',
+    message: 'Надіслано повідомлення',
+    import: 'Імпорт даних',
+  },
+  {
+    create: 'Record created',
+    update: 'Record changed',
+    delete: 'Record deleted',
+    status: 'Status changed',
+    stock: 'Stock movement',
+    message: 'Message sent',
+    import: 'Data import',
+  },
+);

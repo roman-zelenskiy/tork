@@ -12,11 +12,13 @@ import { PageHeader, EmptyState } from '../../shared/ui/states';
 import { Tabs, TabItem } from '../../shared/ui/tabs';
 import { BulkDef, CellDef, Column, DataTable, FilterDef } from '../../shared/ui/data-table';
 import { Plate } from '../../shared/ui/display';
+import { formatPlate } from '../../core/data/plates';
 import { Switch } from '../../shared/ui/checkbox';
 import { Tooltip } from '../../shared/ui/tooltip';
 import { fmtDate, fmtDateTime, fmtKm, fmtMoney, fmtPhone, plural } from '../../shared/format';
 import { MailingDialog } from './mailing-dialog';
 import { RuleForm } from './rule-form';
+import { L } from '../../core/i18n';
 
 type Tab = 'due' | 'rules' | 'mailings';
 
@@ -26,12 +28,12 @@ type Tab = 'due' | 'rules' | 'mailings';
   imports: [RouterLink, Icon, PageHeader, EmptyState, Tabs, DataTable, CellDef, BulkDef, Plate, Switch, Tooltip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <tk-page-header title="Нагадування" [subtitle]="subtitle()">
+    <tk-page-header [title]="L('Нагадування', 'Reminders')" [subtitle]="subtitle()">
       @if (tab() === 'rules') {
-        <button type="button" class="btn btn-primary" (click)="editRule(null)"><svg [lucideIcon]="I.plus" aria-hidden="true"></svg>Нове правило</button>
+        <button type="button" class="btn btn-primary" (click)="editRule(null)"><svg [lucideIcon]="I.plus" aria-hidden="true"></svg>{{ L('Нове правило', 'New rule') }}</button>
       }
     </tk-page-header>
-    <tk-tabs class="mb-5" [items]="tabs()" [(value)]="tab" ariaLabel="Розділи нагадувань" panelId="rem-panel" />
+    <tk-tabs class="mb-5" [items]="tabs()" [(value)]="tab" [ariaLabel]="L('Розділи нагадувань', 'Reminder sections')" panelId="rem-panel" />
 
     <div id="rem-panel" role="tabpanel">
       @switch (tab()) {
@@ -39,8 +41,8 @@ type Tab = 'due' | 'rules' | 'mailings';
           <tk-data-table
             tableId="reminders"
             csvName="nahaduvannia"
-            ariaLabel="Кому пора на сервіс"
-            searchPlaceholder="Клієнт, номер, робота…"
+            [ariaLabel]="L('Кому пора на сервіс', 'Who’s due for service')"
+            [searchPlaceholder]="L('Клієнт, номер, робота…', 'Customer, plate, job…')"
             [rows]="due()"
             [columns]="columns"
             [filters]="filters()"
@@ -50,8 +52,8 @@ type Tab = 'due' | 'rules' | 'mailings';
             [defaultSort]="{ key: 'due', dir: 'asc' }"
             [searchText]="searchText"
             emptyArt="done"
-            emptyTitle="Нікому не пора"
-            emptyText="Усі клієнти пройшли ТО вчасно. Нагадування з’являться, коли наблизиться пробіг або дата."
+            [emptyTitle]="L('Нікому не пора', 'Nobody is due')"
+            [emptyText]="L('Усі клієнти пройшли ТО вчасно. Нагадування з’являться, коли наблизиться пробіг або дата.', 'Every customer is up to date. Reminders appear as the mileage or date approaches.')"
           >
             <ng-template tkCell="client" let-r>
               <a [routerLink]="['/kliyenty', r.client.id]" class="row-link">{{ r.client.name }}</a>
@@ -60,32 +62,32 @@ type Tab = 'due' | 'rules' | 'mailings';
             <ng-template tkCell="car" let-r><span class="flex items-center gap-2"><tk-plate [value]="r.car.plate" /><span class="text-ink-2">{{ r.car.make }} {{ r.car.model }}</span></span></ng-template>
             <ng-template tkCell="title" let-r>
               <span class="flex items-center gap-1.5">
-                <span class="badge" [class]="r.kind === 'deferred' ? 'badge-accent' : 'badge-info'">{{ r.kind === 'deferred' ? 'відкладено' : 'ТО' }}</span>{{ r.title }}
+                <span class="badge" [class]="r.kind === 'deferred' ? 'badge-accent' : 'badge-info'">{{ r.kind === 'deferred' ? L('відкладено', 'deferred') : L('ТО', 'service') }}</span>{{ r.title }}
               </span>
               <span class="block text-xs text-ink-3">{{ r.reason }}</span>
             </ng-template>
             <ng-template tkCell="due" let-r>
               <span [class.text-danger]="r.overdue" [class.font-medium]="r.overdue">{{ r.dueDate ? date(r.dueDate) : '—' }}</span>
               @if (r.overdue) {
-                <span class="block text-xs text-danger">прострочено</span>
+                <span class="block text-xs text-danger">{{ L('прострочено', 'overdue') }}</span>
               }
             </ng-template>
             <ng-template tkCell="consent" let-r>
               @if (r.client.allowMessages) {
-                <svg [lucideIcon]="I.check" class="text-success" aria-label="Є згода" role="img"></svg>
+                <svg [lucideIcon]="I.check" class="text-success" [attr.aria-label]="L('Є згода', 'Consent given')" role="img"></svg>
               } @else {
-                <span class="text-xs text-ink-3" tkTip="Клієнт не давав згоди на розсилки">немає</span>
+                <span class="text-xs text-ink-3" [tkTip]="L('Клієнт не давав згоди на розсилки', 'The customer hasn’t agreed to mailings')">{{ L('немає', 'none') }}</span>
               }
             </ng-template>
             <ng-template tkCell="actions" let-r>
               <span class="flex justify-end gap-1">
-                <button type="button" class="btn btn-sm" (click)="book(r)">Записати</button>
-                <button type="button" class="btn btn-ghost btn-icon btn-sm" [attr.aria-label]="'Не нагадувати: ' + r.title" tkTip="Не нагадувати" (click)="dismiss([r])"><svg [lucideIcon]="I.x" [size]="14" aria-hidden="true"></svg></button>
+                <button type="button" class="btn btn-sm" (click)="book(r)">{{ L('Записати', 'Book') }}</button>
+                <button type="button" class="btn btn-ghost btn-icon btn-sm" [attr.aria-label]="L('Не нагадувати: ', 'Don’t remind: ') + r.title" [tkTip]="L('Не нагадувати', 'Don’t remind')" (click)="dismiss([r])"><svg [lucideIcon]="I.x" [size]="14" aria-hidden="true"></svg></button>
               </span>
             </ng-template>
             <ng-template tkBulk let-rows>
-              <button type="button" class="btn btn-sm btn-primary" (click)="mail(rows)"><svg [lucideIcon]="I.send" aria-hidden="true"></svg>Розсилка</button>
-              <button type="button" class="btn btn-sm" (click)="dismiss(rows)">Не нагадувати</button>
+              <button type="button" class="btn btn-sm btn-primary" (click)="mail(rows)"><svg [lucideIcon]="I.send" aria-hidden="true"></svg>{{ L('Розсилка', 'Mailing') }}</button>
+              <button type="button" class="btn btn-sm" (click)="dismiss(rows)">{{ L('Не нагадувати', 'Don’t remind') }}</button>
             </ng-template>
           </tk-data-table>
         }
@@ -93,7 +95,7 @@ type Tab = 'due' | 'rules' | 'mailings';
           @if (!db.ready()) {
             <div class="grid gap-3 md:grid-cols-2">@for (i of [1, 2, 3, 4]; track i) {<div class="skeleton h-28"></div>}</div>
           } @else if (!db.rules.items().length) {
-            <div class="card"><tk-empty art="bell" title="Правил ще немає" text="Створіть правило: наприклад, заміна оливи кожні 10 000 км або 12 місяців."><button type="button" class="btn btn-primary" (click)="editRule(null)">Нове правило</button></tk-empty></div>
+            <div class="card"><tk-empty art="bell" [title]="L('Правил ще немає', 'No rules yet')" [text]="L('Створіть правило: наприклад, заміна оливи кожні 10 000 км або 12 місяців.', 'Create a rule: for example, an oil change every 10,000 km or 12 months.')"><button type="button" class="btn btn-primary" (click)="editRule(null)">{{ L('Нове правило', 'New rule') }}</button></tk-empty></div>
           } @else {
             <div class="grid gap-3 md:grid-cols-2">
               @for (r of db.rules.items(); track r.id) {
@@ -103,13 +105,13 @@ type Tab = 'due' | 'rules' | 'mailings';
                       <h3 class="m-0 text-[15px] font-semibold">{{ r.name }}</h3>
                       <p class="m-0 text-[13px] text-ink-2">{{ ruleText(r) }}</p>
                     </div>
-                    <tk-switch [checked]="r.active" [ariaLabel]="'Активне: ' + r.name" (changed)="toggleRule(r, $event)" />
+                    <tk-switch [checked]="r.active" [ariaLabel]="L('Активне: ', 'Active: ') + r.name" (changed)="toggleRule(r, $event)" />
                   </div>
-                  <p class="m-0 text-xs text-ink-3">Робота: <span class="mono">{{ r.workCode }}</span>{{ tplName(r) ? ', шаблон «' + tplName(r) + '»' : '' }}</p>
+                  <p class="m-0 text-xs text-ink-3">{{ L('Робота', 'Job') }}: <span class="mono">{{ r.workCode }}</span>{{ tplName(r) ? L(', шаблон «' + tplName(r) + '»', ', template “' + tplName(r) + '”') : '' }}</p>
                   <div class="mt-auto flex items-center gap-2 pt-1">
-                    <span class="text-xs text-ink-2">Зараз пора: <b class="num">{{ dueByRule(r.id) }}</b></span>
-                    <button type="button" class="btn btn-ghost btn-sm ml-auto" (click)="editRule(r)"><svg [lucideIcon]="I.edit" aria-hidden="true"></svg>Змінити</button>
-                    <button type="button" class="btn btn-ghost btn-icon btn-sm btn-danger" [attr.aria-label]="'Видалити правило ' + r.name" (click)="removeRule(r)"><svg [lucideIcon]="I.trash" [size]="14" aria-hidden="true"></svg></button>
+                    <span class="text-xs text-ink-2">{{ L('Зараз пора', 'Due now') }}: <b class="num">{{ dueByRule(r.id) }}</b></span>
+                    <button type="button" class="btn btn-ghost btn-sm ml-auto" (click)="editRule(r)"><svg [lucideIcon]="I.edit" aria-hidden="true"></svg>{{ L('Змінити', 'Edit') }}</button>
+                    <button type="button" class="btn btn-ghost btn-icon btn-sm btn-danger" [attr.aria-label]="L('Видалити правило ', 'Delete rule ') + r.name" (click)="removeRule(r)"><svg [lucideIcon]="I.trash" [size]="14" aria-hidden="true"></svg></button>
                   </div>
                 </article>
               }
@@ -120,7 +122,7 @@ type Tab = 'due' | 'rules' | 'mailings';
           @if (!db.ready()) {
             <div class="skeleton h-64"></div>
           } @else if (!mailings().length) {
-            <div class="card"><tk-empty art="inbox" title="Розсилок ще не було" text="Оберіть клієнтів на вкладці «Кому пора» й натисніть «Розсилка»." /></div>
+            <div class="card"><tk-empty art="inbox" [title]="L('Розсилок ще не було', 'No mailings yet')" [text]="L('Оберіть клієнтів на вкладці «Кому пора» й натисніть «Розсилка».', 'Choose customers on the “Due” tab and press “Mailing”.')" /></div>
           } @else {
             <div class="card divide-y divide-line">
               @for (m of mailings(); track m.id) {
@@ -128,7 +130,7 @@ type Tab = 'due' | 'rules' | 'mailings';
                   <summary class="flex list-none items-center gap-3 px-4 py-3 hover:bg-subtle/60 [&::-webkit-details-marker]:hidden">
                     <span class="grid size-8 flex-none place-items-center rounded-lg" [class]="m.channel === 'viber' ? 'bg-[#efeaf8] text-[#6046a3] dark:bg-[rgb(160_135_225/0.16)] dark:text-[#c7b6f0]' : 'bg-info-soft text-info'"><svg [lucideIcon]="m.channel === 'viber' ? I.message : I.smartphone" aria-hidden="true"></svg></span>
                     <span class="min-w-0 flex-1"><span class="block truncate-1 font-medium">{{ m.title }}</span><span class="block text-xs text-ink-3">{{ dt(m.createdAt) }}, {{ m.channel === 'viber' ? 'Viber' : 'SMS' }}</span></span>
-                    <span class="text-[13px] text-ink-2 num">{{ m.recipients.length }} {{ plural(m.recipients.length, ['отримувач', 'отримувачі', 'отримувачів']) }}</span>
+                    <span class="text-[13px] text-ink-2 num">{{ m.recipients.length }} {{ plural(m.recipients.length, ['отримувач', 'отримувачі', 'отримувачів'], ['recipient', 'recipients']) }}</span>
                     <svg [lucideIcon]="I.chevronDown" class="text-ink-3 transition-transform duration-150 group-open:rotate-180" aria-hidden="true"></svg>
                   </summary>
                   <ul class="m-0 max-h-72 list-none overflow-y-auto border-t border-line bg-subtle/40 p-0">
@@ -149,6 +151,7 @@ type Tab = 'due' | 'rules' | 'mailings';
   `,
 })
 export class Reminders {
+  protected readonly L = L;
   protected readonly I = I;
   protected readonly db = inject(DbService);
   private readonly rem = inject(RemindersService);
@@ -166,44 +169,44 @@ export class Reminders {
   protected readonly due = computed(() => (this.db.ready() ? this.rem.due() : []));
   protected readonly mailings = computed<Mailing[]>(() => [...this.db.mailings.items()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
   protected readonly subtitle = computed(() => {
-    if (!this.db.ready()) return 'Завантаження…';
+    if (!this.db.ready()) return L('Завантаження…', 'Loading…');
     const d = this.due();
     const over = d.filter((x) => x.overdue).length;
-    return `${d.length} ${plural(d.length, ['нагадування', 'нагадування', 'нагадувань'])}${over ? `, ${over} прострочено` : ''}`;
+    return `${d.length} ${plural(d.length, ['нагадування', 'нагадування', 'нагадувань'], ['reminder', 'reminders'])}${over ? `, ${over} ${L('прострочено', 'overdue')}` : ''}`;
   });
   protected readonly tabs = computed<TabItem<Tab>[]>(() => [
-    { value: 'due', label: 'Кому пора', count: this.db.ready() ? this.due().length : null },
-    { value: 'rules', label: 'Правила ТО', count: this.db.ready() ? this.db.rules.items().length : null },
-    { value: 'mailings', label: 'Розсилки', count: this.db.ready() ? this.db.mailings.items().length : null },
+    { value: 'due', label: L('Кому пора', 'Due'), count: this.db.ready() ? this.due().length : null },
+    { value: 'rules', label: L('Правила ТО', 'Service rules'), count: this.db.ready() ? this.db.rules.items().length : null },
+    { value: 'mailings', label: L('Розсилки', 'Mailings'), count: this.db.ready() ? this.db.mailings.items().length : null },
   ]);
 
   protected readonly columns: Column<DueItem>[] = [
-    { key: 'client', label: 'Клієнт', value: (r) => r.client.name, required: true },
-    { key: 'car', label: 'Авто', value: (r) => `${r.car.plate} ${r.car.make} ${r.car.model}`, sortable: false },
-    { key: 'title', label: 'Що зробити', value: (r) => r.title },
-    { key: 'due', label: 'Коли', value: (r) => r.dueDate, format: (r) => fmtDate(r.dueDate) },
-    { key: 'km', label: 'Пробіг (прогноз)', value: (r) => r.forecastKm, format: (r) => fmtKm(r.forecastKm), align: 'right' },
-    { key: 'amount', label: 'Сума', value: (r) => r.amount, format: (r) => (r.amount ? fmtMoney(r.amount) : '—'), align: 'right' },
-    { key: 'consent', label: 'Згода', value: (r) => (r.client.allowMessages ? 'так' : 'ні'), align: 'center', sortable: false },
+    { key: 'client', label: L('Клієнт', 'Customer'), value: (r) => r.client.name, required: true },
+    { key: 'car', label: L('Авто', 'Car'), value: (r) => `${formatPlate(r.car.plate)} ${r.car.make} ${r.car.model}`, sortable: false },
+    { key: 'title', label: L('Що зробити', 'To do'), value: (r) => r.title },
+    { key: 'due', label: L('Коли', 'When'), value: (r) => r.dueDate, format: (r) => fmtDate(r.dueDate) },
+    { key: 'km', label: L('Пробіг (прогноз)', 'Mileage (forecast)'), value: (r) => r.forecastKm, format: (r) => fmtKm(r.forecastKm), align: 'right' },
+    { key: 'amount', label: L('Сума', 'Amount'), value: (r) => r.amount, format: (r) => (r.amount ? fmtMoney(r.amount) : '—'), align: 'right' },
+    { key: 'consent', label: L('Згода', 'Consent'), value: (r) => (r.client.allowMessages ? L('так', 'yes') : L('ні', 'no')), align: 'center', sortable: false },
     { key: 'actions', label: '', value: () => '', sortable: false, csv: () => '' },
   ];
   protected readonly filters = computed<FilterDef<DueItem>[]>(() => [
     {
       key: 'kind',
-      label: 'Джерело',
+      label: L('Джерело', 'Source'),
       options: [
-        { value: 'rule', label: 'Правила ТО' },
-        { value: 'deferred', label: 'Відкладені роботи' },
+        { value: 'rule', label: L('Правила ТО', 'Service rules') },
+        { value: 'deferred', label: L('Відкладені роботи', 'Deferred work') },
       ],
       match: (r, v) => v.includes(r.kind),
     },
-    { key: 'rule', label: 'Правило', options: this.db.rules.items().map((r) => ({ value: r.id, label: r.name })), match: (r, v) => !!r.ruleId && v.includes(r.ruleId) },
+    { key: 'rule', label: L('Правило', 'Rule'), options: this.db.rules.items().map((r) => ({ value: r.id, label: r.name })), match: (r, v) => !!r.ruleId && v.includes(r.ruleId) },
     {
       key: 'when',
-      label: 'Термін',
+      label: L('Термін', 'Due'),
       options: [
-        { value: 'over', label: 'Прострочені' },
-        { value: 'soon', label: 'Найближчі 3 тижні' },
+        { value: 'over', label: L('Прострочені', 'Overdue') },
+        { value: 'soon', label: L('Найближчі 3 тижні', 'Next 3 weeks') },
       ],
       match: (r, v) => v.includes(r.overdue ? 'over' : 'soon'),
     },
@@ -219,12 +222,12 @@ export class Reminders {
     return this.due().filter((d) => d.ruleId === id).length;
   }
   protected clientName(id: string): string {
-    return this.db.clients.get(id)?.name ?? 'Видалений клієнт';
+    return this.db.clients.get(id)?.name ?? L('Видалений клієнт', 'Deleted customer');
   }
 
   protected mail(rows: DueItem[]): void {
-    if (!rows.some((r) => r.client.allowMessages)) return void this.toast.info('Жоден з обраних клієнтів не давав згоди на розсилки');
-    this.dialogs.open(MailingDialog, rows, { size: 'lg', label: 'Розсилка' });
+    if (!rows.some((r) => r.client.allowMessages)) return void this.toast.info(L('Жоден з обраних клієнтів не давав згоди на розсилки', 'None of the selected customers agreed to mailings'));
+    this.dialogs.open(MailingDialog, rows, { size: 'lg', label: L('Розсилка', 'Mailing') });
   }
   protected async book(r: DueItem): Promise<void> {
     await this.rem.mark(r, 'booked');
@@ -232,18 +235,18 @@ export class Reminders {
   }
   protected async dismiss(rows: DueItem[]): Promise<void> {
     for (const r of rows) await this.rem.mark(r, 'dismissed');
-    this.toast.success(rows.length === 1 ? 'Більше не нагадуватимемо' : `Приховано ${rows.length}`);
+    this.toast.success(rows.length === 1 ? L('Більше не нагадуватимемо', 'We won’t remind again') : L(`Приховано ${rows.length}`, `${rows.length} hidden`));
   }
   protected editRule(r: ReminderRule | null): void {
-    this.dialogs.open(RuleForm, { id: r?.id }, { drawer: true, label: 'Правило ТО' });
+    this.dialogs.open(RuleForm, { id: r?.id }, { drawer: true, label: L('Правило ТО', 'Service rule') });
   }
   protected async toggleRule(r: ReminderRule, active: boolean): Promise<void> {
-    await this.db.rules.update(r.id, { active }, { log: `Правило «${r.name}» ${active ? 'увімкнено' : 'вимкнено'}` });
+    await this.db.rules.update(r.id, { active }, { log: active ? L(`Правило «${r.name}» увімкнено`, `Rule “${r.name}” turned on`) : L(`Правило «${r.name}» вимкнено`, `Rule “${r.name}” turned off`) });
   }
   protected async removeRule(r: ReminderRule): Promise<void> {
-    const ok = await this.dialogs.confirm({ title: `Видалити правило «${r.name}»?`, text: 'Нагадування за ним більше не формуватимуться.', confirm: 'Видалити', danger: true });
+    const ok = await this.dialogs.confirm({ title: L(`Видалити правило «${r.name}»?`, `Delete rule “${r.name}”?`), text: L('Нагадування за ним більше не формуватимуться.', 'It will no longer create reminders.'), confirm: L('Видалити', 'Delete'), danger: true });
     if (!ok) return;
-    const removed = await this.db.rules.remove(r.id, { log: `Видалено правило «${r.name}»` });
-    if (removed) this.toast.undo('Правило видалено', () => this.db.rules.restore(removed));
+    const removed = await this.db.rules.remove(r.id, { log: L(`Видалено правило «${r.name}»`, `Rule “${r.name}” deleted`) });
+    if (removed) this.toast.undo(L('Правило видалено', 'Rule deleted'), () => this.db.rules.restore(removed));
   }
 }

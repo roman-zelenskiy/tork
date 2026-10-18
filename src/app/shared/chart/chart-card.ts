@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import { Icon } from '../ui/icon';
 import { I } from '../icons';
+import { L } from '../../core/i18n';
 
 export interface TableView {
   head: string[];
@@ -23,7 +24,7 @@ export interface TableView {
       </div>
       @if (table()) {
         <button type="button" class="btn btn-ghost btn-sm" [attr.aria-pressed]="asTable()" (click)="asTable.set(!asTable())">
-          <svg [lucideIcon]="asTable() ? I.activity : I.list" aria-hidden="true"></svg>{{ asTable() ? 'Графік' : 'Таблиця' }}
+          <svg [lucideIcon]="asTable() ? I.activity : I.list" aria-hidden="true"></svg>{{ asTable() ? L('Графік', 'Chart') : L('Таблиця', 'Table') }}
         </button>
       }
     </div>
@@ -44,6 +45,7 @@ export interface TableView {
   `,
 })
 export class ChartCard {
+  protected readonly L = L;
   protected readonly I = I;
   readonly title = input.required<string>();
   readonly subtitle = input<string | null>(null);

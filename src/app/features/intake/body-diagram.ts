@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { BodyZone, Damage, DamageKind } from '../../core/data/models';
 import { DAMAGE_COLOR, DAMAGE_LABEL, ZONE_LABEL } from '../../core/domain/body';
+import { L } from '../../core/i18n';
 
 interface ZoneShape {
   zone: BodyZone;
@@ -42,7 +43,7 @@ const ZONES: ZoneShape[] = [
   { zone: 'wheel_rr', d: r(204, 388, 16, 52, 5), cx: 212, cy: 414 },
 ];
 
-const LETTER: Record<DamageKind, string> = { scratch: 'П', dent: 'В', chip: 'С', crack: 'Т' };
+const LETTER: Record<DamageKind, string> = L({ scratch: 'П', dent: 'В', chip: 'С', crack: 'Т' }, { scratch: 'S', dent: 'D', chip: 'C', crack: 'K' });
 
 /**
  * Інтерактивна схема кузова: зони — кнопки (Tab/Enter/Space), маркери пошкоджень
@@ -53,9 +54,9 @@ const LETTER: Record<DamageKind, string> = { scratch: 'П', dent: 'В', chip: '�
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
-    <svg viewBox="0 0 260 520" class="mx-auto block h-auto w-full max-w-[300px] select-none" role="group" aria-label="Схема кузова, перед угорі">
-      <text x="130" y="11" text-anchor="middle" class="fill-ink-3 text-[10px]">ПЕРЕД</text>
-      <text x="130" y="516" text-anchor="middle" class="fill-ink-3 text-[10px]">ЗАД</text>
+    <svg viewBox="0 0 260 520" class="mx-auto block h-auto w-full max-w-[300px] select-none" role="group" [attr.aria-label]="L('Схема кузова, перед угорі', 'Body diagram, front at the top')">
+      <text x="130" y="11" text-anchor="middle" class="fill-ink-3 text-[10px]">{{ L('ПЕРЕД', 'FRONT') }}</text>
+      <text x="130" y="516" text-anchor="middle" class="fill-ink-3 text-[10px]">{{ L('ЗАД', 'REAR') }}</text>
       @for (z of zones; track z.zone) {
         @let n = count().get(z.zone) ?? 0;
         <path
@@ -65,7 +66,7 @@ const LETTER: Record<DamageKind, string> = { scratch: 'П', dent: 'В', chip: '�
           [class.zone-dmg]="n > 0"
           [attr.role]="readonly() ? 'img' : 'button'"
           [attr.tabindex]="readonly() ? -1 : 0"
-          [attr.aria-label]="label(z.zone) + (n ? ', пошкоджень: ' + n : ', без пошкоджень')"
+          [attr.aria-label]="label(z.zone) + (n ? L(', пошкоджень: ', ', damage: ') + n : L(', без пошкоджень', ', no damage'))"
           [attr.aria-pressed]="readonly() ? null : selected() === z.zone"
           (click)="!readonly() && pick.emit(z.zone)"
           (keydown.enter)="!readonly() && pick.emit(z.zone)"
@@ -81,7 +82,7 @@ const LETTER: Record<DamageKind, string> = { scratch: 'П', dent: 'В', chip: '�
         </g>
       }
     </svg>
-    <ul class="mt-3 flex list-none flex-wrap justify-center gap-x-3 gap-y-1 p-0 text-xs text-ink-2" aria-label="Позначення">
+    <ul class="mt-3 flex list-none flex-wrap justify-center gap-x-3 gap-y-1 p-0 text-xs text-ink-2" [attr.aria-label]="L('Позначення', 'Legend')">
       @for (k of kinds; track k) {
         <li class="inline-flex items-center gap-1.5">
           <span class="grid size-4 place-items-center rounded-full text-[9px] font-bold text-surface" [style.background]="color(k)" aria-hidden="true">{{ letter(k) }}</span>{{ kindLabel(k) }}
@@ -119,6 +120,7 @@ const LETTER: Record<DamageKind, string> = { scratch: 'П', dent: 'В', chip: '�
   `,
 })
 export class BodyDiagram {
+  protected readonly L = L;
   protected readonly zones = ZONES;
   protected readonly kinds: DamageKind[] = ['scratch', 'dent', 'chip', 'crack'];
   readonly damages = input<Damage[]>([]);

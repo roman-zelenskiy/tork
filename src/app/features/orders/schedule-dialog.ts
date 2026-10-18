@@ -13,6 +13,7 @@ import { DatePicker } from '../../shared/ui/date-picker';
 import { TimePicker } from '../../shared/ui/time-picker';
 import { Option } from '../../shared/ui/option';
 import { minToHHMM, ymd } from '../../shared/format';
+import { L } from '../../core/i18n';
 
 /** Зміна запису наряду: пост, дата, час, тривалість, механік — з перевіркою конфліктів */
 @Component({
@@ -21,22 +22,22 @@ import { minToHHMM, ymd } from '../../shared/format';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form novalidate (submit)="$event.preventDefault(); save()">
-      <div class="dlg-head"><div><h2>Запис {{ order.number }}</h2><p>Пост, час і механік</p></div></div>
+      <div class="dlg-head"><div><h2>{{ L('Запис', 'Booking') }} {{ order.number }}</h2><p>{{ L('Пост, час і механік', 'Bay, time and mechanic') }}</p></div></div>
       <div class="dlg-body grid grid-cols-2 gap-3">
-        <tk-field class="col-span-2" forId="sd-post" label="Пост">
-          <tk-select inputId="sd-post" [options]="postOptions()" [(value)]="postId" placeholder="Без поста" [clearable]="true" />
+        <tk-field class="col-span-2" forId="sd-post" [label]="L('Пост', 'Bay')">
+          <tk-select inputId="sd-post" [options]="postOptions()" [(value)]="postId" [placeholder]="L('Без поста', 'No bay')" [clearable]="true" />
         </tk-field>
-        <tk-field forId="sd-date" label="Дата" [error]="err('date')">
+        <tk-field forId="sd-date" [label]="L('Дата', 'Date')" [error]="err('date')">
           <tk-date-picker inputId="sd-date" [(value)]="date" [invalid]="!!err('date')" />
         </tk-field>
-        <tk-field forId="sd-time" label="Час" [error]="err('time')">
+        <tk-field forId="sd-time" [label]="L('Час', 'Time')" [error]="err('time')">
           <tk-time-picker inputId="sd-time" [(value)]="time" [from]="branch()?.opensAt ?? '08:00'" [to]="branch()?.closesAt ?? '20:00'" [invalid]="!!err('time')" />
         </tk-field>
-        <tk-field forId="sd-dur" label="Тривалість">
-          <tk-stepper inputId="sd-dur" [(value)]="duration" [min]="15" [max]="600" [step]="15" suffix="хв" />
+        <tk-field forId="sd-dur" [label]="L('Тривалість', 'Duration')">
+          <tk-stepper inputId="sd-dur" [(value)]="duration" [min]="15" [max]="600" [step]="15" [suffix]="L('хв', 'min')" />
         </tk-field>
-        <tk-field forId="sd-mech" label="Механік">
-          <tk-select inputId="sd-mech" [options]="mechOptions()" [(value)]="mechanicId" placeholder="Не призначено" [clearable]="true" />
+        <tk-field forId="sd-mech" [label]="L('Механік', 'Mechanic')">
+          <tk-select inputId="sd-mech" [options]="mechOptions()" [(value)]="mechanicId" [placeholder]="L('Не призначено', 'Not assigned')" [clearable]="true" />
         </tk-field>
         @for (c of conflicts(); track $index) {
           <div class="col-span-2 flex gap-2 rounded-lg bg-danger-soft p-2.5 text-[13px] text-danger" role="alert">
@@ -45,13 +46,14 @@ import { minToHHMM, ymd } from '../../shared/format';
         }
       </div>
       <div class="dlg-foot">
-        <button type="button" class="btn" (click)="requestClose()">Скасувати</button>
-        <button type="submit" class="btn btn-primary" [disabled]="saving()">Зберегти</button>
+        <button type="button" class="btn" (click)="requestClose()">{{ L('Скасувати', 'Cancel') }}</button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">{{ L('Зберегти', 'Save') }}</button>
       </div>
     </form>
   `,
 })
 export class ScheduleDialog extends FormDialog<boolean> {
+  protected readonly L = L;
   protected readonly I = I;
   private readonly db = inject(DbService);
   private readonly schedule = inject(ScheduleService);
@@ -89,8 +91,8 @@ export class ScheduleDialog extends FormDialog<boolean> {
   protected errors() {
     const hard = this.conflicts().find((c) => c.kind === 'overlap');
     return {
-      date: this.postId() && !this.date() ? 'Оберіть дату' : null,
-      time: this.postId() && !this.time() ? 'Оберіть час' : (hard?.text ?? null),
+      date: this.postId() && !this.date() ? L('Оберіть дату', 'Choose a date') : null,
+      time: this.postId() && !this.time() ? L('Оберіть час', 'Choose a time') : (hard?.text ?? null),
     };
   }
   protected save(): Promise<void> {
@@ -98,9 +100,9 @@ export class ScheduleDialog extends FormDialog<boolean> {
       await this.db.orders.update(
         this.order.id,
         { postId: this.postId(), start: this.postId() ? this.startIso() : null, durationMin: this.duration(), mechanicId: this.mechanicId() },
-        { log: `${this.order.number}: змінено запис` },
+        { log: L(`${this.order.number}: змінено запис`, `${this.order.number}: booking changed`) },
       );
-      this.toast.success('Запис оновлено');
+      this.toast.success(L('Запис оновлено', 'Booking updated'));
       return true;
     });
   }
